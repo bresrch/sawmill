@@ -206,12 +206,11 @@ func WithHTTPResponseWriterOptions(logger sawmill.Logger, w http.ResponseWriter,
 
 // normalizeHeaderName converts header names to lowercase with underscores
 func normalizeHeaderName(name string) string {
+	name = strings.ToLower(name) // Convert to lowercase using standard library
 	result := make([]rune, 0, len(name))
 	for _, r := range name {
 		if r == '-' {
 			result = append(result, '_')
-		} else if r >= 'A' && r <= 'Z' {
-			result = append(result, r+32) // Convert to lowercase
 		} else {
 			result = append(result, r)
 		}
