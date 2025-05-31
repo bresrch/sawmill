@@ -196,7 +196,7 @@ func WithHTTPResponseWriterOptions(logger sawmill.Logger, w http.ResponseWriter,
 
 	// Try to extract response size if available
 	if opts.IncludeSize {
-		if sizeWriter, ok := w.(interface{ Size() int }); ok {
+		if sizeWriter, ok := w.(interface{ Size() int64 }); ok {
 			result = result.WithDot(opts.FieldPrefix+"size", sizeWriter.Size())
 		}
 	}
