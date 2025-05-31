@@ -31,11 +31,15 @@ go run examples/key-value/main.go
 ### 1. Basic (`basic/`)
 Drop-in slog replacement with enhanced structured logging.
 
+![Basic Example](basic/image.png)
+
 **Implementation**: Package-level functions, default handlers, log level filtering
 **Use Case**: Rapid prototyping, slog migration, simple applications
 
 ### 2. Nested Attributes (`nested-attributes/`)
 Hierarchical data structures for complex domain models.
+
+![Nested Attributes Example](nested-attributes/image.png)
 
 **Implementation**: Dot notation (`user.profile.name`), key paths, logical grouping
 **Use Case**: E-commerce orders, user sessions, API request/response tracking
@@ -43,11 +47,15 @@ Hierarchical data structures for complex domain models.
 ### 3. Colors (`colors/`)
 Terminal output optimization for development and debugging.
 
+![Colors Example](colors/image.png)
+
 **Implementation**: ANSI color codes, pattern-based key mapping, syntax highlighting
 **Use Case**: Local development, debugging sessions, CI/CD pipeline output
 
 ### 4. Marks (`marks/`)
 Process flow tracking and phase separation.
+
+![Marks Example](marks/image.png)
 
 **Implementation**: Workflow delimiters, contextual markers, visual separators
 **Use Case**: ETL pipelines, batch processing, multi-stage deployments
@@ -55,11 +63,15 @@ Process flow tracking and phase separation.
 ### 5. Options Pattern (`options-pattern/`)
 Production configuration management with builder pattern.
 
+![Options Pattern Example](options-pattern/image.png)
+
 **Implementation**: Method chaining, environment-specific configs, file rotation
 **Use Case**: Production deployments, configuration management, environment isolation
 
 ### 6. Key-Value (`key-value/`)
 Machine-parseable output for monitoring systems.
+
+![Key-Value Example](key-value/image.png)
 
 **Implementation**: Flat key=value format, color-coded keys, metric logging
 **Use Case**: Prometheus integration, log aggregation, alerting systems
@@ -67,11 +79,15 @@ Machine-parseable output for monitoring systems.
 ### 7. Multi-Output (`multi-output/`)
 Fan-out logging architecture for different consumers.
 
+![Multi-Output Example](multi-output/image.png)
+
 **Implementation**: Multiple handlers, level-based routing, format specialization
 **Use Case**: Production monitoring, audit logging, development debugging
 
 ### 8. Callbacks (`callbacks/`)
 Runtime context injection and cross-cutting concerns.
+
+![Callbacks Example](callbacks/image.png)
 
 **Implementation**: Middleware pattern, request tracing, dynamic enrichment
 **Use Case**: Distributed tracing, user context, performance monitoring

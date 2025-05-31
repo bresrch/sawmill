@@ -48,6 +48,8 @@ func main() {
 
 Sawmill uses the options pattern for clean, flexible configuration:
 
+![Options Pattern Example](examples/options-pattern/image.png)
+
 ```go
 // Create a customized handler with multiple options
 logger := sawmill.New(sawmill.NewTextHandler(
