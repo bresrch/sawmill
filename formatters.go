@@ -633,9 +633,9 @@ func (f *KeyValueFormatter) writeKeyValueAttributes(output *strings.Builder, att
 		key := strings.Join(path, ".")
 		if f.ColorOutput && f.ColorScheme != nil {
 			output.WriteString(" ")
-			output.WriteString(f.formatKeyValue(key, fmt.Sprintf("%v", value), false))
+			output.WriteString(f.formatKeyValue(key, fmt.Sprintf("%#v", value), false))
 		} else {
-			output.WriteString(fmt.Sprintf(" %s=%v", key, value))
+			output.WriteString(fmt.Sprintf(" %s=%#v", key, value))
 		}
 	})
 }
