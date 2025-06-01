@@ -87,7 +87,7 @@ func main() {
 
 	// Same options, different formatters
 	textCompareLogger := sawmill.New(sawmill.NewTextHandler(baseOptions...))
-	
+
 	// Extend base options with additional options
 	jsonOptions := append(baseOptions, sawmill.WithPrettyPrint(true))
 	jsonCompareLogger := sawmill.New(sawmill.NewJSONHandler(jsonOptions...))

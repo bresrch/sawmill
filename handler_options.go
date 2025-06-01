@@ -41,11 +41,11 @@ func NewHandlerOptions(options ...HandlerOption) *HandlerOptions {
 		colorOutput:   false,
 		attrFormat:    "nested",
 	}
-	
+
 	for _, option := range options {
 		option(opts)
 	}
-	
+
 	return opts
 }
 

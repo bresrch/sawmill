@@ -19,6 +19,11 @@ type BaseHandler struct {
 	mu        sync.RWMutex
 }
 
+// GetBuffer implements BufferProvider for BaseHandler.
+func (h *BaseHandler) GetBuffer() Buffer {
+	return h.buffer
+}
+
 // NewBaseHandler creates a new base handler
 func NewBaseHandler(formatter Formatter, buffer Buffer, level Level) *BaseHandler {
 	return &BaseHandler{
@@ -124,7 +129,7 @@ func (h *BaseHandler) Enabled(ctx context.Context, level Level) bool {
 func (h *BaseHandler) NeedsSource() bool {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-	
+
 	// Check if formatter is configured to include source
 	switch f := h.formatter.(type) {
 	case *JSONFormatter:
@@ -572,4 +577,58 @@ func createKeyValueFormatter(options *HandlerOptions) *KeyValueFormatter {
 	}
 
 	return formatter
+}
+
+// BufferProvider is an interface for handlers that provide access to their Buffer.
+type BufferProvider interface {
+	GetBuffer() Buffer
+}
+
+// temporaryHandler wraps an existing handler to use a different formatter temporarily
+type temporaryHandler struct {
+	originalHandler Handler
+	formatter       Formatter
+}
+
+func (h *temporaryHandler) Handle(ctx context.Context, record *Record) error {
+	if !h.originalHandler.Enabled(ctx, record.Level) {
+		return nil
+	}
+
+	// Format with our temporary formatter
+	data, err := h.formatter.Format(record)
+	if err != nil {
+		return err
+	}
+
+	// Get the buffer from the original handler to write to
+	bufferProvider, ok := h.originalHandler.(BufferProvider)
+	if !ok {
+		// Fallback: use the original handler's Handle method
+		return h.originalHandler.Handle(ctx, record)
+	}
+
+	buffer := bufferProvider.GetBuffer()
+
+	// Write to the original handler's buffer
+	_, err = buffer.Write(data)
+	return err
+}
+
+func (h *temporaryHandler) WithAttrs(attrs []slog.Attr) Handler {
+	return &temporaryHandler{
+		originalHandler: h.originalHandler.WithAttrs(attrs),
+		formatter:       h.formatter,
+	}
+}
+
+func (h *temporaryHandler) WithGroup(name string) Handler {
+	return &temporaryHandler{
+		originalHandler: h.originalHandler.WithGroup(name),
+		formatter:       h.formatter,
+	}
+}
+
+func (h *temporaryHandler) Enabled(ctx context.Context, level Level) bool {
+	return h.originalHandler.Enabled(ctx, level)
 }

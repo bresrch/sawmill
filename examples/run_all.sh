@@ -24,6 +24,7 @@ examples=(
     "key-value:Machine-parseable output"
     "multi-output:Fan-out logging architecture"
     "callbacks:Runtime context injection"
+    "as-method:Explicit output based logging"
 )
 
 for example in "${examples[@]}"; do

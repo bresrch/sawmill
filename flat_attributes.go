@@ -13,7 +13,7 @@ import (
 type FlatAttributes struct {
 	data map[string]interface{}
 	mu   sync.RWMutex
-	
+
 	// Fast path for small attribute counts - avoid map allocations
 	smallData [8]struct {
 		key   string
@@ -34,7 +34,7 @@ func (f *FlatAttributes) Set(keyPath []string, value interface{}) {
 	if len(keyPath) == 0 {
 		return
 	}
-	
+
 	key := strings.Join(keyPath, ".")
 	f.SetByDotNotation(key, value)
 }
@@ -43,7 +43,7 @@ func (f *FlatAttributes) Set(keyPath []string, value interface{}) {
 func (f *FlatAttributes) SetByDotNotation(dotPath string, value interface{}) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	
+
 	if f.data == nil {
 		f.data = make(map[string]interface{}, 16)
 	}
@@ -67,7 +67,7 @@ func (f *FlatAttributes) SetFast(key string, value interface{}) {
 		f.smallCount++
 		return
 	}
-	
+
 	// Slow path: migrate to map if needed
 	if f.data == nil {
 		f.data = make(map[string]interface{}, 16) // Pre-size more aggressively
@@ -90,14 +90,14 @@ func (f *FlatAttributes) Get(keyPath []string) (interface{}, bool) {
 func (f *FlatAttributes) GetByDotNotation(dotPath string) (interface{}, bool) {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
-	
+
 	// Check small data first
 	for i := 0; i < f.smallCount; i++ {
 		if f.smallData[i].key == dotPath {
 			return f.smallData[i].value, true
 		}
 	}
-	
+
 	if f.data == nil {
 		return nil, false
 	}
@@ -127,11 +127,11 @@ func (f *FlatAttributes) Delete(keyPath []string) bool {
 func (f *FlatAttributes) DeleteByDotNotation(dotPath string) bool {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	
+
 	if f.data == nil {
 		return false
 	}
-	
+
 	if _, exists := f.data[dotPath]; exists {
 		delete(f.data, dotPath)
 		return true
@@ -143,11 +143,11 @@ func (f *FlatAttributes) DeleteByDotNotation(dotPath string) bool {
 func (f *FlatAttributes) Keys() []string {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
-	
+
 	if f.data == nil {
 		return nil
 	}
-	
+
 	keys := make([]string, 0, len(f.data))
 	for key := range f.data {
 		keys = append(keys, key)
@@ -169,7 +169,7 @@ func (f *FlatAttributes) AllPaths() [][]string {
 func (f *FlatAttributes) Size() int {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
-	
+
 	if f.data == nil {
 		return f.smallCount
 	}
@@ -185,7 +185,7 @@ func (f *FlatAttributes) IsEmpty() bool {
 func (f *FlatAttributes) Clone() *FlatAttributes {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
-	
+
 	clone := NewFlatAttributes()
 	if f.data != nil {
 		for key, value := range f.data {
@@ -199,7 +199,7 @@ func (f *FlatAttributes) Clone() *FlatAttributes {
 func (f *FlatAttributes) CloneFromPool() *FlatAttributes {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
-	
+
 	clone := NewFlatAttributesFromPool()
 	if f.data != nil {
 		for key, value := range f.data {
@@ -214,16 +214,16 @@ func (f *FlatAttributes) Merge(other *FlatAttributes) {
 	if other == nil || other.IsEmpty() {
 		return
 	}
-	
+
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	other.mu.RLock()
 	defer other.mu.RUnlock()
-	
+
 	if f.data == nil {
 		f.data = make(map[string]interface{}, len(other.data))
 	}
-	
+
 	for key, value := range other.data {
 		f.data[key] = value
 	}
@@ -233,17 +233,17 @@ func (f *FlatAttributes) Merge(other *FlatAttributes) {
 func (f *FlatAttributes) Walk(fn func(path []string, value interface{})) {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
-	
+
 	// Walk small data first
 	for i := 0; i < f.smallCount; i++ {
 		path := strings.Split(f.smallData[i].key, ".")
 		fn(path, f.smallData[i].value)
 	}
-	
+
 	if f.data == nil {
 		return
 	}
-	
+
 	for key, value := range f.data {
 		path := strings.Split(key, ".")
 		fn(path, value)
@@ -254,11 +254,11 @@ func (f *FlatAttributes) Walk(fn func(path []string, value interface{})) {
 func (f *FlatAttributes) ToMap() map[string]interface{} {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
-	
+
 	if f.data == nil {
 		return make(map[string]interface{})
 	}
-	
+
 	result := make(map[string]interface{}, len(f.data))
 	for key, value := range f.data {
 		result[key] = value
@@ -270,17 +270,17 @@ func (f *FlatAttributes) ToMap() map[string]interface{} {
 func (f *FlatAttributes) ToNestedMap() map[string]interface{} {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
-	
+
 	if f.data == nil {
 		return make(map[string]interface{})
 	}
-	
+
 	result := make(map[string]interface{})
-	
+
 	for flatKey, value := range f.data {
 		parts := strings.Split(flatKey, ".")
 		current := result
-		
+
 		// Navigate to the parent container
 		for i, part := range parts[:len(parts)-1] {
 			if _, exists := current[part]; !exists {
@@ -303,11 +303,11 @@ func (f *FlatAttributes) ToNestedMap() map[string]interface{} {
 				}
 			}
 		}
-		
+
 		// Set the final value
 		current[parts[len(parts)-1]] = value
 	}
-	
+
 	return result
 }
 
@@ -315,11 +315,11 @@ func (f *FlatAttributes) ToNestedMap() map[string]interface{} {
 func (f *FlatAttributes) MarshalJSON() ([]byte, error) {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
-	
+
 	if f.data == nil && f.smallCount == 0 {
 		return []byte("{}"), nil
 	}
-	
+
 	// Fast path for small data only
 	if f.data == nil {
 		smallMap := make(map[string]interface{}, f.smallCount)
@@ -328,7 +328,7 @@ func (f *FlatAttributes) MarshalJSON() ([]byte, error) {
 		}
 		return json.Marshal(smallMap)
 	}
-	
+
 	// Combined path: merge small data with map
 	if f.smallCount > 0 {
 		combinedMap := make(map[string]interface{}, len(f.data)+f.smallCount)
@@ -340,7 +340,7 @@ func (f *FlatAttributes) MarshalJSON() ([]byte, error) {
 		}
 		return json.Marshal(combinedMap)
 	}
-	
+
 	// Use direct JSON marshaling of the flat map for performance
 	return json.Marshal(f.data)
 }
@@ -355,15 +355,15 @@ func (f *FlatAttributes) MarshalNestedJSON() ([]byte, error) {
 func (f *FlatAttributes) String() string {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
-	
+
 	if f.data == nil || len(f.data) == 0 {
 		return "{}"
 	}
-	
+
 	var builder strings.Builder
 	builder.WriteString("{")
 	first := true
-	
+
 	for key, value := range f.data {
 		if !first {
 			builder.WriteString(", ")
@@ -373,7 +373,7 @@ func (f *FlatAttributes) String() string {
 		builder.WriteString(fmt.Sprintf("%v", value))
 		first = false
 	}
-	
+
 	builder.WriteString("}")
 	return builder.String()
 }
@@ -382,12 +382,12 @@ func (f *FlatAttributes) String() string {
 func (f *FlatAttributes) reset() {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	
+
 	// Clear the map but keep the allocation
 	for key := range f.data {
 		delete(f.data, key)
 	}
-	
+
 	// Clear small data
 	for i := 0; i < f.smallCount; i++ {
 		f.smallData[i].key = ""
@@ -401,32 +401,32 @@ func (f *FlatAttributes) ExpandStruct(prefix string, value interface{}) {
 	if value == nil {
 		return
 	}
-	
+
 	val := reflect.ValueOf(value)
 	typ := reflect.TypeOf(value)
-	
+
 	// Handle pointers to structs
 	if val.Kind() == reflect.Ptr && !val.IsNil() {
 		val = val.Elem()
 		typ = typ.Elem()
 	}
-	
+
 	if val.Kind() != reflect.Struct {
 		// Not a struct, store as-is
 		f.SetByDotNotation(prefix, value)
 		return
 	}
-	
+
 	// Expand struct fields
 	for i := 0; i < val.NumField(); i++ {
 		field := val.Field(i)
 		fieldType := typ.Field(i)
-		
+
 		// Skip unexported fields
 		if !field.CanInterface() {
 			continue
 		}
-		
+
 		fieldName := strings.ToLower(fieldType.Name)
 		var fieldKey string
 		if prefix != "" {
@@ -434,9 +434,9 @@ func (f *FlatAttributes) ExpandStruct(prefix string, value interface{}) {
 		} else {
 			fieldKey = fieldName
 		}
-		
+
 		fieldValue := field.Interface()
-		
+
 		// Recursively expand nested structs
 		if field.Kind() == reflect.Struct || (field.Kind() == reflect.Ptr && !field.IsNil() && field.Elem().Kind() == reflect.Struct) {
 			f.ExpandStruct(fieldKey, fieldValue)

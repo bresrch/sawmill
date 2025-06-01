@@ -2,6 +2,8 @@ package sawmill
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"log/slog"
 	"runtime"
@@ -58,10 +60,10 @@ func (l *logger) Log(ctx context.Context, level Level, msg string, args ...inter
 	l.mu.RUnlock()
 
 	err := l.handler.Handle(ctx, record)
-	
+
 	// Return record to pool after use
 	ReturnRecordToPool(record)
-	
+
 	if err != nil {
 		// Log error handling could be added here if needed
 	}
@@ -73,12 +75,12 @@ func (l *logger) needsSourceCapture() bool {
 	if sh, ok := l.handler.(SourceHandler); ok {
 		return sh.NeedsSource()
 	}
-	
+
 	// Check if handler has NeedsSource method (BaseHandler)
 	if bh, ok := l.handler.(*BaseHandler); ok {
 		return bh.NeedsSource()
 	}
-	
+
 	// Safe default - capture source info
 	return true
 }
@@ -98,10 +100,10 @@ func (l *logger) LogRecord(ctx context.Context, record *Record) {
 	l.mu.RUnlock()
 
 	err := l.handler.Handle(ctx, record)
-	
+
 	// Return record to pool after use
 	ReturnRecordToPool(record)
-	
+
 	if err != nil {
 		// Log error handling could be added here if needed
 	}
@@ -275,6 +277,112 @@ func (l *logger) clone() *logger {
 		groups:    newGroups,
 		callbacks: newCallbacks,
 	}
+}
+
+// As returns a temporary logger that uses the specified formatter for a single message
+func (l *logger) As(formatter Formatter) AsLogger {
+	return &asLogger{
+		logger:    l,
+		formatter: formatter,
+		outputID:  l.generateOutputID(),
+	}
+}
+
+// generateOutputID creates a unique identifier for correlating multiline outputs
+func (l *logger) generateOutputID() string {
+	bytes := make([]byte, 4) // 8 character hex string
+	rand.Read(bytes)
+	return hex.EncodeToString(bytes)
+}
+
+// asLogger implements the AsLogger interface
+type asLogger struct {
+	logger    *logger
+	formatter Formatter
+	outputID  string
+}
+
+// Log logs a message using the temporary formatter
+func (al *asLogger) Log(ctx context.Context, level Level, msg string, args ...interface{}) {
+	if !al.logger.handler.Enabled(ctx, level) {
+		return
+	}
+
+	record := NewRecordFromPool(level, msg)
+	record.Context = ctx
+	record.OutputID = al.outputID
+
+	// Only capture frame if the handler/formatter might need it
+	if al.logger.needsSourceCapture() {
+		var pcs [1]uintptr
+		runtime.Callers(3, pcs[:])
+		record.PC = pcs[0]
+	}
+
+	record.Attributes.Merge(al.logger.attrs)
+	al.logger.processArgsOptimized(record, args...)
+
+	al.logger.mu.RLock()
+	for _, callback := range al.logger.callbacks {
+		record = callback(record)
+	}
+	al.logger.mu.RUnlock()
+
+	// Create a temporary handler with our custom formatter
+	tempHandler := &temporaryHandler{
+		originalHandler: al.logger.handler,
+		formatter:       al.formatter,
+	}
+
+	err := tempHandler.Handle(ctx, record)
+
+	// Return record to pool after use
+	ReturnRecordToPool(record)
+
+	if err != nil {
+		// Log error handling could be added here if needed
+	}
+}
+
+// Trace logs a message at trace level using the temporary formatter
+func (al *asLogger) Trace(msg string, args ...interface{}) {
+	al.Log(context.Background(), LevelTrace, msg, args...)
+}
+
+// Debug logs a message at debug level using the temporary formatter
+func (al *asLogger) Debug(msg string, args ...interface{}) {
+	al.Log(context.Background(), LevelDebug, msg, args...)
+}
+
+// Info logs a message at info level using the temporary formatter
+func (al *asLogger) Info(msg string, args ...interface{}) {
+	al.Log(context.Background(), LevelInfo, msg, args...)
+}
+
+// Warn logs a message at warn level using the temporary formatter
+func (al *asLogger) Warn(msg string, args ...interface{}) {
+	al.Log(context.Background(), LevelWarn, msg, args...)
+}
+
+// Error logs a message at error level using the temporary formatter
+func (al *asLogger) Error(msg string, args ...interface{}) {
+	al.Log(context.Background(), LevelError, msg, args...)
+}
+
+// Fatal logs a message at fatal level using the temporary formatter
+func (al *asLogger) Fatal(msg string, args ...interface{}) {
+	al.Log(context.Background(), LevelFatal, msg, args...)
+}
+
+// Panic logs a message at panic level using the temporary formatter and panics
+func (al *asLogger) Panic(msg string, args ...interface{}) {
+	al.Log(context.Background(), LevelPanic, msg, args...)
+	panic(fmt.Sprintf(msg, args...))
+}
+
+// Mark logs a message at mark level using the temporary formatter
+func (al *asLogger) Mark(msg string, args ...interface{}) {
+	al.Log(context.Background(), LevelMark, msg, args...)
 }
 
 // slogCompatibility provides slog compatibility

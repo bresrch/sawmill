@@ -93,6 +93,18 @@ userLogger := logger.WithGroup("user")
 userLogger.Info("Action performed", "action", "login", "timestamp", time.Now())
 ```
 
+### Temporary Format Switching
+
+Change output format for specific messages without affecting others:
+
+```go
+logger := sawmill.Default() // Text format
+
+logger.Info("Regular text message")
+logger.As(sawmill.NewJSONFormatter()).Info("This one message in JSON")
+logger.Info("Back to text format")
+```
+
 ### Dynamic Callbacks
 
 Modify log records at runtime:
