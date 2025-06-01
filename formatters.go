@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"reflect"
 	"runtime"
 	"strings"
 	"time"
@@ -630,14 +631,79 @@ func (f *KeyValueFormatter) formatMark(record *Record) ([]byte, error) {
 
 func (f *KeyValueFormatter) writeKeyValueAttributes(output *strings.Builder, attrs *RecursiveMap) {
 	attrs.Walk(func(path []string, value interface{}) {
+		f.writeExpandedValue(output, path, value)
+	})
+}
+
+func (f *KeyValueFormatter) writeExpandedValue(output *strings.Builder, path []string, value interface{}) {
+	// Use reflection to check if this is a struct and expand it
+	if f.shouldExpandStruct(value) {
+		f.expandStruct(output, path, value)
+	} else {
 		key := strings.Join(path, ".")
 		if f.ColorOutput && f.ColorScheme != nil {
 			output.WriteString(" ")
-			output.WriteString(f.formatKeyValue(key, fmt.Sprintf("%#v", value), false))
+			output.WriteString(f.formatKeyValue(key, fmt.Sprintf("%+v", value), false))
 		} else {
-			output.WriteString(fmt.Sprintf(" %s=%#v", key, value))
+			output.WriteString(fmt.Sprintf(" %s=%+v", key, value))
 		}
-	})
+	}
+}
+
+func (f *KeyValueFormatter) shouldExpandStruct(value interface{}) bool {
+	if value == nil {
+		return false
+	}
+	
+	val := reflect.ValueOf(value)
+	// Handle pointers to structs
+	if val.Kind() == reflect.Ptr && !val.IsNil() {
+		val = val.Elem()
+	}
+	
+	return val.Kind() == reflect.Struct
+}
+
+func (f *KeyValueFormatter) expandStruct(output *strings.Builder, basePath []string, value interface{}) {
+	val := reflect.ValueOf(value)
+	typ := reflect.TypeOf(value)
+	
+	// Handle pointers to structs
+	if val.Kind() == reflect.Ptr && !val.IsNil() {
+		val = val.Elem()
+		typ = typ.Elem()
+	}
+	
+	if val.Kind() != reflect.Struct {
+		return
+	}
+	
+	for i := 0; i < val.NumField(); i++ {
+		field := val.Field(i)
+		fieldType := typ.Field(i)
+		
+		// Skip unexported fields
+		if !field.CanInterface() {
+			continue
+		}
+		
+		fieldName := strings.ToLower(fieldType.Name)
+		fieldPath := append(basePath, fieldName)
+		fieldValue := field.Interface()
+		
+		// Recursively expand nested structs
+		if f.shouldExpandStruct(fieldValue) {
+			f.expandStruct(output, fieldPath, fieldValue)
+		} else {
+			key := strings.Join(fieldPath, ".")
+			if f.ColorOutput && f.ColorScheme != nil {
+				output.WriteString(" ")
+				output.WriteString(f.formatKeyValue(key, fmt.Sprintf("%+v", fieldValue), false))
+			} else {
+				output.WriteString(fmt.Sprintf(" %s=%+v", key, fieldValue))
+			}
+		}
+	}
 }
 
 func (f *KeyValueFormatter) formatKeyValue(key string, value string, newlinePrefix bool) string {
