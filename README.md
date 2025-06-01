@@ -1,3 +1,5 @@
+![Sawmill Logo](.github/logo.jpg)
+
 # Sawmill
 
 **Sawmill** is an enhanced Go logging library that improves upon the standard `log/slog` package with nested key-value support, dynamic callbacks, flexible output formatting, and color syntax highlighting.
