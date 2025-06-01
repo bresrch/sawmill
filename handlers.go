@@ -14,7 +14,7 @@ type BaseHandler struct {
 	formatter Formatter
 	buffer    Buffer
 	level     Level
-	attrs     *RecursiveMap
+	attrs     *FlatAttributes
 	groups    []string
 	mu        sync.RWMutex
 }
@@ -25,7 +25,7 @@ func NewBaseHandler(formatter Formatter, buffer Buffer, level Level) *BaseHandle
 		formatter: formatter,
 		buffer:    buffer,
 		level:     level,
-		attrs:     NewRecursiveMap(),
+		attrs:     NewFlatAttributes(),
 		groups:    make([]string, 0),
 	}
 }
@@ -37,7 +37,18 @@ func (h *BaseHandler) Handle(ctx context.Context, record *Record) error {
 
 	h.mu.RLock()
 
-	// Create a copy of the record to avoid modifying the original
+	// Fast path: if no handler attributes, format directly without cloning
+	if h.attrs.IsEmpty() {
+		h.mu.RUnlock()
+		data, err := h.formatter.Format(record)
+		if err != nil {
+			return err
+		}
+		_, err = h.buffer.Write(data)
+		return err
+	}
+
+	// Slow path: clone and merge when handler has attributes
 	recordCopy := &Record{
 		Time:       record.Time,
 		Level:      record.Level,
@@ -107,6 +118,28 @@ func (h *BaseHandler) Enabled(ctx context.Context, level Level) bool {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 	return level >= h.level
+}
+
+// NeedsSource indicates if this handler needs source information
+func (h *BaseHandler) NeedsSource() bool {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	
+	// Check if formatter is configured to include source
+	switch f := h.formatter.(type) {
+	case *JSONFormatter:
+		return f.IncludeSource
+	case *TextFormatter:
+		return f.IncludeSource
+	case *XMLFormatter:
+		return f.IncludeSource
+	case *YAMLFormatter:
+		return f.IncludeSource
+	case *KeyValueFormatter:
+		return f.IncludeSource
+	default:
+		return true // Safe default
+	}
 }
 
 // TextHandler implements Handler for text output

@@ -21,12 +21,12 @@ const (
 	LevelMark
 )
 
-// Record represents a single log entry with nested attributes
+// Record represents a single log entry with flat attributes
 type Record struct {
 	Time       time.Time
 	Level      Level
 	Message    string
-	Attributes *RecursiveMap
+	Attributes *FlatAttributes
 	Context    context.Context
 	PC         uintptr
 }
@@ -37,7 +37,7 @@ func NewRecord(level Level, msg string) *Record {
 		Time:       time.Now(),
 		Level:      level,
 		Message:    msg,
-		Attributes: NewRecursiveMap(),
+		Attributes: NewFlatAttributes(),
 		Context:    context.Background(),
 	}
 }
@@ -78,6 +78,12 @@ type Handler interface {
 	WithAttrs(attrs []slog.Attr) Handler
 	WithGroup(name string) Handler
 	Enabled(ctx context.Context, level Level) bool
+}
+
+// SourceHandler extends Handler to indicate if source info is needed
+type SourceHandler interface {
+	Handler
+	NeedsSource() bool
 }
 
 // Logger represents the main logging interface

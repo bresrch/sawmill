@@ -223,7 +223,7 @@ func replaceWithFunc(input, pattern string, replacer func(match, capture string)
 }
 
 // ColorizeAttributes formats attributes with color highlighting
-func (cs *ColorScheme) ColorizeAttributes(attrs *RecursiveMap, format string) string {
+func (cs *ColorScheme) ColorizeAttributes(attrs *FlatAttributes, format string) string {
 	if !cs.Enabled {
 		return attrs.String()
 	}
@@ -239,7 +239,7 @@ func (cs *ColorScheme) ColorizeAttributes(attrs *RecursiveMap, format string) st
 }
 
 // colorizeAttributesJSON formats attributes as colored JSON
-func (cs *ColorScheme) colorizeAttributesJSON(attrs *RecursiveMap, indent int) string {
+func (cs *ColorScheme) colorizeAttributesJSON(attrs *FlatAttributes, indent int) string {
 	if attrs.IsEmpty() {
 		return "{}"
 	}
@@ -257,16 +257,10 @@ func (cs *ColorScheme) colorizeAttributesJSON(attrs *RecursiveMap, indent int) s
 		coloredKey := cs.colorizeKey(key)
 		result.WriteString(`"` + coloredKey + `": `)
 
-		child := attrs.children[key]
-		if child.IsLeaf() {
-			// Colorize value
-			coloredValue := cs.colorizeValue(child.value)
-			result.WriteString(coloredValue)
-		} else {
-			// Recursive call for nested objects
-			nestedJSON := cs.colorizeAttributesJSON(child, indent+1)
-			result.WriteString(nestedJSON)
-		}
+		// Get value and colorize it
+		value, _ := attrs.GetByDotNotation(key)
+		coloredValue := cs.colorizeValue(value)
+		result.WriteString(coloredValue)
 
 		if i < len(keys)-1 {
 			result.WriteString(",")
@@ -279,7 +273,7 @@ func (cs *ColorScheme) colorizeAttributesJSON(attrs *RecursiveMap, indent int) s
 }
 
 // colorizeAttributesFlat formats attributes in flat key=value format with colors
-func (cs *ColorScheme) colorizeAttributesFlat(attrs *RecursiveMap) string {
+func (cs *ColorScheme) colorizeAttributesFlat(attrs *FlatAttributes) string {
 	var parts []string
 
 	attrs.Walk(func(path []string, value interface{}) {
@@ -293,29 +287,35 @@ func (cs *ColorScheme) colorizeAttributesFlat(attrs *RecursiveMap) string {
 }
 
 // colorizeAttributesNested formats attributes in nested format with colors
-func (cs *ColorScheme) colorizeAttributesNested(attrs *RecursiveMap, indent int) string {
+func (cs *ColorScheme) colorizeAttributesNested(attrs *FlatAttributes, indent int) string {
 	if attrs.IsEmpty() {
 		return ""
 	}
 
 	var result strings.Builder
+
+	// Convert to nested map for proper hierarchical display
+	nested := attrs.ToNestedMap()
+	cs.colorizeNestedMap(&result, nested, indent)
+
+	return result.String()
+}
+
+func (cs *ColorScheme) colorizeNestedMap(result *strings.Builder, data map[string]interface{}, indent int) {
 	indentStr := strings.Repeat("  ", indent)
 
-	for key, child := range attrs.children {
+	for key, value := range data {
 		result.WriteString("\n" + indentStr)
 		coloredKey := cs.colorizeKey(key)
 		result.WriteString(coloredKey + ":")
 
-		if child.IsLeaf() {
-			coloredValue := cs.colorizeValue(child.value)
-			result.WriteString(" " + coloredValue)
+		if nestedMap, ok := value.(map[string]interface{}); ok {
+			cs.colorizeNestedMap(result, nestedMap, indent+1)
 		} else {
-			nestedResult := cs.colorizeAttributesNested(child, indent+1)
-			result.WriteString(nestedResult)
+			coloredValue := cs.colorizeValue(value)
+			result.WriteString(" " + coloredValue)
 		}
 	}
-
-	return result.String()
 }
 
 // ParseColorCode converts common color names to ANSI codes

@@ -11,7 +11,7 @@ import (
 // logger implements the Logger interface
 type logger struct {
 	handler   Handler
-	attrs     *RecursiveMap
+	attrs     *FlatAttributes
 	groups    []string
 	callbacks []CallbackFunc
 	mu        sync.RWMutex
@@ -21,7 +21,7 @@ type logger struct {
 func New(handler Handler) Logger {
 	return &logger{
 		handler:   handler,
-		attrs:     NewRecursiveMap(),
+		attrs:     NewFlatAttributes(),
 		groups:    make([]string, 0),
 		callbacks: make([]CallbackFunc, 0),
 	}
@@ -38,15 +38,18 @@ func (l *logger) Log(ctx context.Context, level Level, msg string, args ...inter
 		return
 	}
 
-	record := NewRecord(level, msg)
+	record := NewRecordFromPool(level, msg)
 	record.Context = ctx
 
-	var pcs [1]uintptr
-	runtime.Callers(3, pcs[:])
-	record.PC = pcs[0]
+	// Only capture frame if the handler/formatter might need it
+	if l.needsSourceCapture() {
+		var pcs [1]uintptr
+		runtime.Callers(3, pcs[:])
+		record.PC = pcs[0]
+	}
 
 	record.Attributes.Merge(l.attrs)
-	l.processArgs(record, args...)
+	l.processArgsOptimized(record, args...)
 
 	l.mu.RLock()
 	for _, callback := range l.callbacks {
@@ -54,7 +57,30 @@ func (l *logger) Log(ctx context.Context, level Level, msg string, args ...inter
 	}
 	l.mu.RUnlock()
 
-	l.handler.Handle(ctx, record)
+	err := l.handler.Handle(ctx, record)
+	
+	// Return record to pool after use
+	ReturnRecordToPool(record)
+	
+	if err != nil {
+		// Log error handling could be added here if needed
+	}
+}
+
+// needsSourceCapture checks if source capture is needed
+func (l *logger) needsSourceCapture() bool {
+	// Check if handler implements SourceHandler interface
+	if sh, ok := l.handler.(SourceHandler); ok {
+		return sh.NeedsSource()
+	}
+	
+	// Check if handler has NeedsSource method (BaseHandler)
+	if bh, ok := l.handler.(*BaseHandler); ok {
+		return bh.NeedsSource()
+	}
+	
+	// Safe default - capture source info
+	return true
 }
 
 // LogRecord logs a pre-constructed record
@@ -71,7 +97,14 @@ func (l *logger) LogRecord(ctx context.Context, record *Record) {
 	}
 	l.mu.RUnlock()
 
-	l.handler.Handle(ctx, record)
+	err := l.handler.Handle(ctx, record)
+	
+	// Return record to pool after use
+	ReturnRecordToPool(record)
+	
+	if err != nil {
+		// Log error handling could be added here if needed
+	}
 }
 
 func (l *logger) processArgs(record *Record, args ...interface{}) {
@@ -91,6 +124,52 @@ func (l *logger) processArgs(record *Record, args ...interface{}) {
 		copy(keyPath, l.groups)
 		keyPath = append(keyPath, key)
 
+		record.Attributes.Set(keyPath, value)
+	}
+}
+
+// processArgsOptimized is an optimized version of processArgs
+func (l *logger) processArgsOptimized(record *Record, args ...interface{}) {
+	if len(args) == 0 {
+		return
+	}
+
+	// Fast path for no groups (most common case)
+	if len(l.groups) == 0 {
+		for i := 0; i < len(args); i += 2 {
+			if i+1 >= len(args) {
+				break
+			}
+
+			key, ok := args[i].(string)
+			if !ok {
+				continue
+			}
+
+			value := args[i+1]
+			// Use optimized SetFast directly
+			record.Attributes.SetFast(key, value)
+		}
+		return
+	}
+
+	// Slower path with groups - use pre-allocated paths where possible
+	for i := 0; i < len(args); i += 2 {
+		if i+1 >= len(args) {
+			break
+		}
+
+		key, ok := args[i].(string)
+		if !ok {
+			continue
+		}
+
+		value := args[i+1]
+
+		// Build path with groups
+		keyPath := make([]string, len(l.groups)+1)
+		copy(keyPath, l.groups)
+		keyPath[len(l.groups)] = key
 		record.Attributes.Set(keyPath, value)
 	}
 }

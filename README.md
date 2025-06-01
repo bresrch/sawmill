@@ -2,7 +2,7 @@
 
 # Sawmill
 
-**Sawmill** is an enhanced Go logging library that improves upon the standard `log/slog` package with nested key-value support, dynamic callbacks, flexible output formatting, and color syntax highlighting.
+**Sawmill** is a ZERO-dependency enhanced Go logging library that improves upon the standard `log/slog` package with nested key-value support, dynamic callbacks, flexible output formatting, and color syntax highlighting.
 
 ## Features
 
