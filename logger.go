@@ -2,12 +2,12 @@ package sawmill
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"log/slog"
 	"runtime"
 	"sync"
-	"crypto/rand"
-	"encoding/hex"
 )
 
 // logger implements the Logger interface
@@ -60,10 +60,10 @@ func (l *logger) Log(ctx context.Context, level Level, msg string, args ...inter
 	l.mu.RUnlock()
 
 	err := l.handler.Handle(ctx, record)
-	
+
 	// Return record to pool after use
 	ReturnRecordToPool(record)
-	
+
 	if err != nil {
 		// Log error handling could be added here if needed
 	}
@@ -75,12 +75,12 @@ func (l *logger) needsSourceCapture() bool {
 	if sh, ok := l.handler.(SourceHandler); ok {
 		return sh.NeedsSource()
 	}
-	
+
 	// Check if handler has NeedsSource method (BaseHandler)
 	if bh, ok := l.handler.(*BaseHandler); ok {
 		return bh.NeedsSource()
 	}
-	
+
 	// Safe default - capture source info
 	return true
 }
@@ -100,10 +100,10 @@ func (l *logger) LogRecord(ctx context.Context, record *Record) {
 	l.mu.RUnlock()
 
 	err := l.handler.Handle(ctx, record)
-	
+
 	// Return record to pool after use
 	ReturnRecordToPool(record)
-	
+
 	if err != nil {
 		// Log error handling could be added here if needed
 	}
@@ -331,14 +331,14 @@ func (al *asLogger) Log(ctx context.Context, level Level, msg string, args ...in
 	// Create a temporary handler with our custom formatter
 	tempHandler := &temporaryHandler{
 		originalHandler: al.logger.handler,
-		formatter:      al.formatter,
+		formatter:       al.formatter,
 	}
 
 	err := tempHandler.Handle(ctx, record)
-	
+
 	// Return record to pool after use
 	ReturnRecordToPool(record)
-	
+
 	if err != nil {
 		// Log error handling could be added here if needed
 	}

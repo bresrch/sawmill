@@ -91,12 +91,12 @@ func (f *JSONFormatter) Format(record *Record) ([]byte, error) {
 		if attributesKey == "" {
 			attributesKey = "attributes"
 		}
-		
+
 		buf.WriteByte(',')
 		buf.WriteByte('"')
 		buf.WriteString(attributesKey)
 		buf.WriteString(`":`)
-		
+
 		attrBytes, err := record.Attributes.MarshalJSON()
 		if err != nil {
 			return nil, err
@@ -133,7 +133,7 @@ func (f *JSONFormatter) Format(record *Record) ([]byte, error) {
 			}
 			output[attributesKey] = record.Attributes.ToNestedMap()
 		}
-		
+
 		data, err := json.MarshalIndent(output, "", "  ")
 		if err != nil {
 			return nil, err
@@ -288,7 +288,7 @@ func (f *YAMLFormatter) Format(record *Record) ([]byte, error) {
 
 func (f *YAMLFormatter) writeYAMLAttributes(output *strings.Builder, attrs *FlatAttributes, indent int) {
 	indentStr := strings.Repeat("  ", indent)
-	
+
 	// For flat attributes, we can either output them flat or convert to nested
 	// Let's use the flat approach for simplicity and performance
 	attrs.Walk(func(path []string, value interface{}) {
@@ -437,7 +437,7 @@ func (f *TextFormatter) writeTextAttributesNested(output *strings.Builder, attrs
 
 func (f *TextFormatter) writeNestedMap(output *strings.Builder, data map[string]interface{}, indent int) {
 	indentStr := strings.Repeat("  ", indent)
-	
+
 	for key, value := range data {
 		output.WriteString(fmt.Sprintf("\n%s%s:", indentStr, key))
 		if nestedMap, ok := value.(map[string]interface{}); ok {
@@ -701,7 +701,7 @@ func (f *KeyValueFormatter) writeExpandedValue(output *strings.Builder, path []s
 		prefix := strings.Join(path, ".")
 		attrs := NewFlatAttributes()
 		attrs.ExpandStruct(prefix, value)
-		
+
 		// Walk the expanded attributes
 		attrs.Walk(func(expandedPath []string, expandedValue interface{}) {
 			key := strings.Join(expandedPath, ".")
@@ -727,16 +727,15 @@ func (f *KeyValueFormatter) shouldExpandStruct(value interface{}) bool {
 	if value == nil {
 		return false
 	}
-	
+
 	val := reflect.ValueOf(value)
 	// Handle pointers to structs
 	if val.Kind() == reflect.Ptr && !val.IsNil() {
 		val = val.Elem()
 	}
-	
+
 	return val.Kind() == reflect.Struct
 }
-
 
 func (f *KeyValueFormatter) formatKeyValue(key string, value string, newlinePrefix bool) string {
 	if !f.ColorOutput || f.ColorScheme == nil {
@@ -850,21 +849,21 @@ func (f *JSONFormatter) writeJSONInt(buf *bytes.Buffer, i int) {
 		buf.WriteByte('0')
 		return
 	}
-	
+
 	if i < 0 {
 		buf.WriteByte('-')
 		i = -i
 	}
-	
+
 	// Calculate number of digits to avoid allocations
 	var digits [20]byte // enough for 64-bit int
 	pos := 19
-	
+
 	for i > 0 {
 		digits[pos] = byte('0' + i%10)
 		i /= 10
 		pos--
 	}
-	
+
 	buf.Write(digits[pos+1:])
 }

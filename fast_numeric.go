@@ -12,7 +12,7 @@ func (f *FastNumericBuffer) FormatInt(n int) string {
 	return strconv.Itoa(n)
 }
 
-// FormatInt64 converts an int64 to string using a pre-allocated buffer  
+// FormatInt64 converts an int64 to string using a pre-allocated buffer
 func (f *FastNumericBuffer) FormatInt64(n int64) string {
 	return strconv.FormatInt(n, 10)
 }

@@ -59,11 +59,11 @@ func NewSawmillOptions(options ...SawmillOption) *SawmillOptions {
 		EnableTrace:   false,
 		EnableMetrics: false,
 	}
-	
+
 	for _, option := range options {
 		option(opts)
 	}
-	
+
 	return opts
 }
 

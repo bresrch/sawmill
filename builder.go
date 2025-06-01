@@ -373,7 +373,7 @@ func (rm *RecursiveMap) MarshalJSON() ([]byte, error) {
 		if !first {
 			buf.WriteByte(',')
 		}
-		
+
 		// Write key
 		keyBytes, err := json.Marshal(key)
 		if err != nil {
@@ -400,7 +400,7 @@ func (rm *RecursiveMap) MarshalJSON() ([]byte, error) {
 	}
 
 	buf.WriteByte('}')
-	
+
 	// Copy buffer contents to return slice
 	result := make([]byte, buf.Len())
 	copy(result, buf.Bytes())
