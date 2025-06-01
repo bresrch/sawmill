@@ -347,5 +347,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Acknowledgments
 
 - Inspired by Go's standard `log/slog` package
-- Built upon the foundation of structured logging best practices
-- Community feedback and contributions
+- The Go Gopher mascot was created by Renee French and is licensed under the Creative Commons 4.0 Attribution License
