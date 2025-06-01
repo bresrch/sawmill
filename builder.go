@@ -1,6 +1,7 @@
 package sawmill
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
@@ -195,6 +196,26 @@ func (rm *RecursiveMap) SetByDotNotation(dotPath string, value interface{}) {
 	rm.Set(keys, value)
 }
 
+// SetFast is an optimized version for single-level keys
+func (rm *RecursiveMap) SetFast(key string, value interface{}) {
+	child := rm.children[key]
+	if child == nil {
+		child = NewRecursiveMapFromPool()
+		rm.children[key] = child
+	}
+	child.value = value
+	child.hasValue = true
+}
+
+// SetFastDirect sets a value directly without any checks (unsafe but fast)
+func (rm *RecursiveMap) SetFastDirect(key string, value interface{}) {
+	// Pre-condition: key must not exist in children
+	child := NewRecursiveMapFromPool()
+	child.value = value
+	child.hasValue = true
+	rm.children[key] = child
+}
+
 // GetByDotNotation retrieves a value using dot notation
 func (rm *RecursiveMap) GetByDotNotation(dotPath string) (interface{}, bool) {
 	keys := strings.Split(dotPath, ".")
@@ -222,9 +243,25 @@ func (rm *RecursiveMap) Merge(other *RecursiveMap) {
 
 	for key, child := range other.children {
 		if rm.children[key] == nil {
-			rm.children[key] = child.Clone()
+			rm.children[key] = child.CloneFromPool()
 		} else {
 			rm.children[key].Merge(child)
+		}
+	}
+}
+
+// MergeShallow performs a shallow merge without cloning for read-only operations
+func (rm *RecursiveMap) MergeShallow(other *RecursiveMap) {
+	if other.hasValue {
+		rm.value = other.value
+		rm.hasValue = true
+	}
+
+	for key, child := range other.children {
+		if rm.children[key] == nil {
+			rm.children[key] = child // Shallow copy - only safe for read-only use
+		} else {
+			rm.children[key].MergeShallow(child)
 		}
 	}
 }
@@ -303,4 +340,69 @@ func FromMap(data map[string]interface{}) *RecursiveMap {
 	}
 
 	return rm
+}
+
+// MarshalJSON implements json.Marshaler for efficient JSON encoding
+func (rm *RecursiveMap) MarshalJSON() ([]byte, error) {
+	if rm.IsEmpty() {
+		return []byte("{}"), nil
+	}
+
+	buf := GetBuffer()
+	defer ReturnBuffer(buf)
+
+	buf.WriteByte('{')
+	first := true
+
+	// Write the value if this node has one
+	if rm.hasValue {
+		if !first {
+			buf.WriteByte(',')
+		}
+		buf.WriteString(`"_value":`)
+		valueBytes, err := json.Marshal(rm.value)
+		if err != nil {
+			return nil, err
+		}
+		buf.Write(valueBytes)
+		first = false
+	}
+
+	// Write all children
+	for key, child := range rm.children {
+		if !first {
+			buf.WriteByte(',')
+		}
+		
+		// Write key
+		keyBytes, err := json.Marshal(key)
+		if err != nil {
+			return nil, err
+		}
+		buf.Write(keyBytes)
+		buf.WriteByte(':')
+
+		// Write value
+		if child.IsLeaf() {
+			valueBytes, err := json.Marshal(child.value)
+			if err != nil {
+				return nil, err
+			}
+			buf.Write(valueBytes)
+		} else {
+			childBytes, err := child.MarshalJSON()
+			if err != nil {
+				return nil, err
+			}
+			buf.Write(childBytes)
+		}
+		first = false
+	}
+
+	buf.WriteByte('}')
+	
+	// Copy buffer contents to return slice
+	result := make([]byte, buf.Len())
+	copy(result, buf.Bytes())
+	return result, nil
 }

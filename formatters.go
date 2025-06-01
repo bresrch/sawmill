@@ -1,6 +1,7 @@
 package sawmill
 
 import (
+	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -26,7 +27,7 @@ func NewJSONFormatter() *JSONFormatter {
 	return &JSONFormatter{
 		TimeFormat:    time.RFC3339,
 		PrettyPrint:   false,
-		IncludeSource: true,
+		IncludeSource: false, // Default to false for better performance - can be enabled if needed
 		IncludeLevel:  true,
 		AttributesKey: "attributes",
 		ColorOutput:   false,
@@ -42,56 +43,115 @@ func NewJSONFormatterWithColors(colorMappings map[string]string) *JSONFormatter 
 }
 
 func (f *JSONFormatter) Format(record *Record) ([]byte, error) {
-	output := make(map[string]interface{})
+	buf := GetBuffer()
+	defer ReturnBuffer(buf)
 
-	output["timestamp"] = record.Time.Format(f.TimeFormat)
-	output["message"] = record.Message
+	buf.WriteByte('{')
+	first := true
 
+	// Write timestamp
+	buf.WriteString(`"timestamp":"`)
+	buf.WriteString(record.Time.Format(f.TimeFormat))
+	buf.WriteByte('"')
+	first = false
+
+	// Write message - use custom JSON escaping to avoid reflection
+	if !first {
+		buf.WriteByte(',')
+	}
+	buf.WriteString(`"message":"`)
+	f.writeJSONEscapedString(buf, record.Message)
+	buf.WriteByte('"')
+
+	// Write level
 	if f.IncludeLevel {
-		output["level"] = f.levelString(record.Level)
+		buf.WriteByte(',')
+		buf.WriteString(`"level":"`)
+		buf.WriteString(f.levelString(record.Level))
+		buf.WriteByte('"')
 	}
 
+	// Write source
 	if f.IncludeSource && record.PC != 0 {
 		if frame, ok := f.getFrame(record.PC); ok {
-			output["source"] = map[string]interface{}{
-				"function": frame.Function,
-				"file":     frame.File,
-				"line":     frame.Line,
-			}
+			buf.WriteByte(',')
+			buf.WriteString(`"source":{"function":"`)
+			buf.WriteString(frame.Function)
+			buf.WriteString(`","file":"`)
+			buf.WriteString(frame.File)
+			buf.WriteString(`","line":`)
+			f.writeJSONInt(buf, frame.Line)
+			buf.WriteByte('}')
 		}
 	}
 
-	// Add attributes as nested structure
+	// Write attributes using optimized MarshalJSON
 	if !record.Attributes.IsEmpty() {
 		attributesKey := f.AttributesKey
 		if attributesKey == "" {
 			attributesKey = "attributes"
 		}
-		output[attributesKey] = record.Attributes.ToMap()
+		
+		buf.WriteByte(',')
+		buf.WriteByte('"')
+		buf.WriteString(attributesKey)
+		buf.WriteString(`":`)
+		
+		attrBytes, err := record.Attributes.MarshalJSON()
+		if err != nil {
+			return nil, err
+		}
+		buf.Write(attrBytes)
 	}
 
-	var data []byte
-	var err error
+	buf.WriteByte('}')
+	buf.WriteByte('\n')
 
+	// Handle pretty printing if needed
+	var result []byte
 	if f.PrettyPrint {
-		data, err = json.MarshalIndent(output, "", "  ")
+		// For pretty printing, fall back to standard JSON marshaling
+		output := make(map[string]interface{})
+		output["timestamp"] = record.Time.Format(f.TimeFormat)
+		output["message"] = record.Message
+		if f.IncludeLevel {
+			output["level"] = f.levelString(record.Level)
+		}
+		if f.IncludeSource && record.PC != 0 {
+			if frame, ok := f.getFrame(record.PC); ok {
+				output["source"] = map[string]interface{}{
+					"function": frame.Function,
+					"file":     frame.File,
+					"line":     frame.Line,
+				}
+			}
+		}
+		if !record.Attributes.IsEmpty() {
+			attributesKey := f.AttributesKey
+			if attributesKey == "" {
+				attributesKey = "attributes"
+			}
+			output[attributesKey] = record.Attributes.ToNestedMap()
+		}
+		
+		data, err := json.MarshalIndent(output, "", "  ")
+		if err != nil {
+			return nil, err
+		}
+		result = append(data, '\n')
 	} else {
-		data, err = json.Marshal(output)
+		// Copy optimized buffer contents
+		result = make([]byte, buf.Len())
+		copy(result, buf.Bytes())
 	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	data = append(data, '\n')
 
 	if f.ColorOutput && f.ColorScheme != nil {
 		f.ColorScheme.Enabled = true
-		coloredJSON := f.ColorScheme.colorizeJSON(string(data))
+		coloredJSON := f.ColorScheme.colorizeJSON(string(result))
 		return []byte(coloredJSON), nil
 	}
 
-	return data, nil
+	return result, nil
 }
 
 func (f *JSONFormatter) ContentType() string {
@@ -158,7 +218,7 @@ func (f *XMLFormatter) Format(record *Record) ([]byte, error) {
 		if attributesKey == "" {
 			attributesKey = "attributes"
 		}
-		xmlRecord.Data[attributesKey] = record.Attributes.ToMap()
+		xmlRecord.Data[attributesKey] = record.Attributes.ToNestedMap()
 	}
 
 	data, err := xml.MarshalIndent(xmlRecord, "", "  ")
@@ -225,18 +285,15 @@ func (f *YAMLFormatter) Format(record *Record) ([]byte, error) {
 	return []byte(output.String()), nil
 }
 
-func (f *YAMLFormatter) writeYAMLAttributes(output *strings.Builder, attrs *RecursiveMap, indent int) {
+func (f *YAMLFormatter) writeYAMLAttributes(output *strings.Builder, attrs *FlatAttributes, indent int) {
 	indentStr := strings.Repeat("  ", indent)
-
-	if attrs.hasValue {
-		output.WriteString(fmt.Sprintf("%s%v\n", indentStr, attrs.value))
-		return
-	}
-
-	for key, child := range attrs.children {
-		output.WriteString(fmt.Sprintf("%s%s:\n", indentStr, key))
-		f.writeYAMLAttributes(output, child, indent+1)
-	}
+	
+	// For flat attributes, we can either output them flat or convert to nested
+	// Let's use the flat approach for simplicity and performance
+	attrs.Walk(func(path []string, value interface{}) {
+		key := strings.Join(path, ".")
+		output.WriteString(fmt.Sprintf("%s%s: %v\n", indentStr, key, value))
+	})
 }
 
 func (f *YAMLFormatter) ContentType() string {
@@ -258,7 +315,7 @@ type TextFormatter struct {
 func NewTextFormatter() *TextFormatter {
 	return &TextFormatter{
 		TimeFormat:      "2006-01-02 15:04:05",
-		IncludeSource:   true,
+		IncludeSource:   false, // Default to false for better performance
 		IncludeLevel:    true,
 		AttributeFormat: "nested",
 		ColorOutput:     false,
@@ -364,27 +421,28 @@ func (f *TextFormatter) formatMark(record *Record) ([]byte, error) {
 	return []byte(output.String()), nil
 }
 
-func (f *TextFormatter) writeTextAttributesFlat(output *strings.Builder, attrs *RecursiveMap) {
+func (f *TextFormatter) writeTextAttributesFlat(output *strings.Builder, attrs *FlatAttributes) {
 	attrs.Walk(func(path []string, value interface{}) {
 		key := strings.Join(path, ".")
 		output.WriteString(fmt.Sprintf(" %s=%v", key, value))
 	})
 }
 
-func (f *TextFormatter) writeTextAttributesNested(output *strings.Builder, attrs *RecursiveMap, indent int) {
+func (f *TextFormatter) writeTextAttributesNested(output *strings.Builder, attrs *FlatAttributes, indent int) {
+	// For FlatAttributes, we can convert to nested structure and format
+	nested := attrs.ToNestedMap()
+	f.writeNestedMap(output, nested, indent)
+}
+
+func (f *TextFormatter) writeNestedMap(output *strings.Builder, data map[string]interface{}, indent int) {
 	indentStr := strings.Repeat("  ", indent)
-
-	if attrs.hasValue {
-		output.WriteString(fmt.Sprintf("%s%v", indentStr, attrs.value))
-		return
-	}
-
-	for key, child := range attrs.children {
+	
+	for key, value := range data {
 		output.WriteString(fmt.Sprintf("\n%s%s:", indentStr, key))
-		if child.IsLeaf() {
-			output.WriteString(fmt.Sprintf(" %v", child.value))
+		if nestedMap, ok := value.(map[string]interface{}); ok {
+			f.writeNestedMap(output, nestedMap, indent+1)
 		} else {
-			f.writeTextAttributesNested(output, child, indent+1)
+			output.WriteString(fmt.Sprintf(" %v", value))
 		}
 	}
 }
@@ -629,7 +687,7 @@ func (f *KeyValueFormatter) formatMark(record *Record) ([]byte, error) {
 	return []byte(output.String()), nil
 }
 
-func (f *KeyValueFormatter) writeKeyValueAttributes(output *strings.Builder, attrs *RecursiveMap) {
+func (f *KeyValueFormatter) writeKeyValueAttributes(output *strings.Builder, attrs *FlatAttributes) {
 	attrs.Walk(func(path []string, value interface{}) {
 		f.writeExpandedValue(output, path, value)
 	})
@@ -638,7 +696,21 @@ func (f *KeyValueFormatter) writeKeyValueAttributes(output *strings.Builder, att
 func (f *KeyValueFormatter) writeExpandedValue(output *strings.Builder, path []string, value interface{}) {
 	// Use reflection to check if this is a struct and expand it
 	if f.shouldExpandStruct(value) {
-		f.expandStruct(output, path, value)
+		// For FlatAttributes, we can use the built-in struct expansion
+		prefix := strings.Join(path, ".")
+		attrs := NewFlatAttributes()
+		attrs.ExpandStruct(prefix, value)
+		
+		// Walk the expanded attributes
+		attrs.Walk(func(expandedPath []string, expandedValue interface{}) {
+			key := strings.Join(expandedPath, ".")
+			if f.ColorOutput && f.ColorScheme != nil {
+				output.WriteString(" ")
+				output.WriteString(f.formatKeyValue(key, fmt.Sprintf("%+v", expandedValue), false))
+			} else {
+				output.WriteString(fmt.Sprintf(" %s=%+v", key, expandedValue))
+			}
+		})
 	} else {
 		key := strings.Join(path, ".")
 		if f.ColorOutput && f.ColorScheme != nil {
@@ -664,47 +736,6 @@ func (f *KeyValueFormatter) shouldExpandStruct(value interface{}) bool {
 	return val.Kind() == reflect.Struct
 }
 
-func (f *KeyValueFormatter) expandStruct(output *strings.Builder, basePath []string, value interface{}) {
-	val := reflect.ValueOf(value)
-	typ := reflect.TypeOf(value)
-	
-	// Handle pointers to structs
-	if val.Kind() == reflect.Ptr && !val.IsNil() {
-		val = val.Elem()
-		typ = typ.Elem()
-	}
-	
-	if val.Kind() != reflect.Struct {
-		return
-	}
-	
-	for i := 0; i < val.NumField(); i++ {
-		field := val.Field(i)
-		fieldType := typ.Field(i)
-		
-		// Skip unexported fields
-		if !field.CanInterface() {
-			continue
-		}
-		
-		fieldName := strings.ToLower(fieldType.Name)
-		fieldPath := append(basePath, fieldName)
-		fieldValue := field.Interface()
-		
-		// Recursively expand nested structs
-		if f.shouldExpandStruct(fieldValue) {
-			f.expandStruct(output, fieldPath, fieldValue)
-		} else {
-			key := strings.Join(fieldPath, ".")
-			if f.ColorOutput && f.ColorScheme != nil {
-				output.WriteString(" ")
-				output.WriteString(f.formatKeyValue(key, fmt.Sprintf("%+v", fieldValue), false))
-			} else {
-				output.WriteString(fmt.Sprintf(" %s=%+v", key, fieldValue))
-			}
-		}
-	}
-}
 
 func (f *KeyValueFormatter) formatKeyValue(key string, value string, newlinePrefix bool) string {
 	if !f.ColorOutput || f.ColorScheme == nil {
@@ -779,4 +810,60 @@ func (f *KeyValueFormatter) levelString(level Level) string {
 
 func (f *KeyValueFormatter) getFrame(pc uintptr) (runtime.Frame, bool) {
 	return getFrame(pc)
+}
+
+// Optimized JSON helper functions to avoid reflection and allocations
+
+// writeJSONEscapedString writes a JSON-escaped string directly to the buffer
+func (f *JSONFormatter) writeJSONEscapedString(buf *bytes.Buffer, s string) {
+	for _, r := range s {
+		switch r {
+		case '"':
+			buf.WriteString(`\"`)
+		case '\\':
+			buf.WriteString(`\\`)
+		case '\b':
+			buf.WriteString(`\b`)
+		case '\f':
+			buf.WriteString(`\f`)
+		case '\n':
+			buf.WriteString(`\n`)
+		case '\r':
+			buf.WriteString(`\r`)
+		case '\t':
+			buf.WriteString(`\t`)
+		default:
+			if r < 32 {
+				// Control characters - use Unicode escape
+				buf.WriteString(fmt.Sprintf(`\u%04x`, r))
+			} else {
+				buf.WriteRune(r)
+			}
+		}
+	}
+}
+
+// writeJSONInt writes an integer directly without string conversion overhead
+func (f *JSONFormatter) writeJSONInt(buf *bytes.Buffer, i int) {
+	if i == 0 {
+		buf.WriteByte('0')
+		return
+	}
+	
+	if i < 0 {
+		buf.WriteByte('-')
+		i = -i
+	}
+	
+	// Calculate number of digits to avoid allocations
+	var digits [20]byte // enough for 64-bit int
+	pos := 19
+	
+	for i > 0 {
+		digits[pos] = byte('0' + i%10)
+		i /= 10
+		pos--
+	}
+	
+	buf.Write(digits[pos+1:])
 }

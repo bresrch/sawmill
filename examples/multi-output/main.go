@@ -13,30 +13,27 @@ func main() {
 	multiHandler := sawmill.NewMultiHandler(
 		// Console output with colors (JSON)
 		sawmill.NewJSONHandler(
-			sawmill.NewHandlerOptions().
-				WithStdout().
-				WithColorsEnabled(true).
-				WithPrettyPrint(true).
-				WithColorMappings(map[string]string{
-					"user":   sawmill.ColorBrightBlue,
-					"system": sawmill.ColorYellow,
-					"error":  sawmill.ColorBrightRed,
-				}),
+			sawmill.WithStdout(),
+			sawmill.WithColorsEnabled(true),
+			sawmill.WithPrettyPrint(true),
+			sawmill.WithColorMappings(map[string]string{
+				"user":   sawmill.ColorBrightBlue,
+				"system": sawmill.ColorYellow,
+				"error":  sawmill.ColorBrightRed,
+			}),
 		),
 
 		// File output (Text format for readability)
 		sawmill.NewTextHandler(
-			sawmill.NewHandlerOptions().
-				WithFile("/tmp/sawmill-multi.log", 50*1024*1024, false). // 50MB, no compression
-				WithTimeFormat("2006-01-02 15:04:05.000").
-				WithAttributeFormat("flat"),
+			sawmill.WithFile("/tmp/sawmill-multi.log", 50*1024*1024, false), // 50MB, no compression
+			sawmill.WithTimeFormat("2006-01-02 15:04:05.000"),
+			sawmill.WithAttributeFormat("flat"),
 		),
 
 		// Key-value format to stdout (for monitoring tools)
 		sawmill.NewKeyValueHandler(
-			sawmill.NewHandlerOptions().
-				WithStdout().
-				WithColorsEnabled(false), // No colors for machine parsing
+			sawmill.WithStdout(),
+			sawmill.WithColorsEnabled(false), // No colors for machine parsing
 		),
 	)
 
@@ -85,20 +82,18 @@ func main() {
 	debugHandler := sawmill.NewMultiHandler(
 		// Detailed console output for development
 		sawmill.NewTextHandler(
-			sawmill.NewHandlerOptions().
-				WithStdout().
-				WithLevel(sawmill.LevelDebug).
-				WithColorsEnabled(true).
-				WithAttributeFormat("nested").
-				WithSourceInfo(true),
+			sawmill.WithStdout(),
+			sawmill.WithLevel(sawmill.LevelDebug),
+			sawmill.WithColorsEnabled(true),
+			sawmill.WithAttributeFormat("nested"),
+			sawmill.WithSourceInfo(true),
 		),
 
 		// Machine-readable format for log aggregation
 		sawmill.NewJSONHandler(
-			sawmill.NewHandlerOptions().
-				WithFile("/tmp/debug-structured.jsonl", 100*1024*1024, true).
-				WithLevel(sawmill.LevelDebug).
-				WithPrettyPrint(false), // Compact for storage efficiency
+			sawmill.WithFile("/tmp/debug-structured.jsonl", 100*1024*1024, true),
+			sawmill.WithLevel(sawmill.LevelDebug),
+			sawmill.WithPrettyPrint(false), // Compact for storage efficiency
 		),
 	)
 
@@ -119,26 +114,23 @@ func main() {
 	productionHandler := sawmill.NewMultiHandler(
 		// Console for immediate feedback (only warnings and errors)
 		sawmill.NewTextHandler(
-			sawmill.NewHandlerOptions().
-				WithStdout().
-				WithLevel(sawmill.LevelWarn).
-				WithColorsEnabled(true),
+			sawmill.WithStdout(),
+			sawmill.WithLevel(sawmill.LevelWarn),
+			sawmill.WithColorsEnabled(true),
 		),
 
 		// File for all logs (info and above)
 		sawmill.NewJSONHandler(
-			sawmill.NewHandlerOptions().
-				WithFile("/tmp/production.log", 200*1024*1024, true).
-				WithLevel(sawmill.LevelInfo).
-				WithTimeFormat("2006-01-02T15:04:05.000Z07:00"),
+			sawmill.WithFile("/tmp/production.log", 200*1024*1024, true),
+			sawmill.WithLevel(sawmill.LevelInfo),
+			sawmill.WithTimeFormat("2006-01-02T15:04:05.000Z07:00"),
 		),
 
 		// Error-only file for critical issues
 		sawmill.NewTextHandler(
-			sawmill.NewHandlerOptions().
-				WithFile("/tmp/errors.log", 50*1024*1024, false).
-				WithLevel(sawmill.LevelError).
-				WithTimeFormat("2006-01-02 15:04:05"),
+			sawmill.WithFile("/tmp/errors.log", 50*1024*1024, false),
+			sawmill.WithLevel(sawmill.LevelError),
+			sawmill.WithTimeFormat("2006-01-02 15:04:05"),
 		),
 	)
 

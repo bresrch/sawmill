@@ -7,7 +7,7 @@ import (
 func main() {
 	// Create a JSON logger for better nested attribute visualization
 	logger := sawmill.New(sawmill.NewJSONHandler(
-		sawmill.NewHandlerOptions().WithPrettyPrint(true),
+		sawmill.WithPrettyPrint(true),
 	))
 
 	// Using dot notation for nested attributes

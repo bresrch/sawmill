@@ -42,9 +42,10 @@ func main() {
 	}
 
 	coloredKVLogger := sawmill.New(sawmill.NewKeyValueHandler(
-		sawmill.NewHandlerOptions().
-			WithColorsEnabled(true).
-			WithColorMappings(colorMappings),
+		[]sawmill.HandlerOption{
+			sawmill.WithColorsEnabled(true),
+			sawmill.WithColorMappings(colorMappings),
+		}...,
 	))
 
 	// Demonstrate colored key-value output with nested keys

@@ -13,7 +13,7 @@ func main() {
 
 	// Logger with custom time format
 	customTimeLogger := sawmill.New(sawmill.NewTextHandler(
-		sawmill.NewHandlerOptions().WithTimeFormat("15:04:05"),
+		sawmill.WithTimeFormat("15:04:05"),
 	))
 	customTimeLogger.Info("Custom time format")
 
@@ -21,18 +21,17 @@ func main() {
 
 	// Text logger with all options configured
 	advancedTextLogger := sawmill.New(sawmill.NewTextHandler(
-		sawmill.NewHandlerOptions().
-			WithLevel(sawmill.LevelDebug).
-			WithTimeFormat("2006-01-02 15:04:05.000").
-			WithAttributeFormat("flat").
-			WithColorsEnabled(true).
-			WithColorMappings(map[string]string{
-				"user": sawmill.ColorBrightBlue,
-				"api":  sawmill.ColorBrightGreen,
-			}).
-			WithSourceInfo(true).
-			WithLevelInfo(true).
-			WithStdout(),
+		sawmill.WithLevel(sawmill.LevelDebug),
+		sawmill.WithTimeFormat("2006-01-02 15:04:05.000"),
+		sawmill.WithAttributeFormat("flat"),
+		sawmill.WithColorsEnabled(true),
+		sawmill.WithColorMappings(map[string]string{
+			"user": sawmill.ColorBrightBlue,
+			"api":  sawmill.ColorBrightGreen,
+		}),
+		sawmill.WithSourceInfo(true),
+		sawmill.WithLevelInfo(true),
+		sawmill.WithStdout(),
 	))
 
 	advancedTextLogger.Debug("Advanced text logger",
@@ -45,14 +44,13 @@ func main() {
 
 	// JSON logger with pretty printing and custom attributes key
 	jsonLogger := sawmill.New(sawmill.NewJSONHandler(
-		sawmill.NewHandlerOptions().
-			WithPrettyPrint(true).
-			WithAttributesKey("data").
-			WithColorsEnabled(true).
-			WithColorMappings(map[string]string{
-				"request": sawmill.ColorCyan,
-				"error":   sawmill.ColorBrightRed,
-			}),
+		sawmill.WithPrettyPrint(true),
+		sawmill.WithAttributesKey("data"),
+		sawmill.WithColorsEnabled(true),
+		sawmill.WithColorMappings(map[string]string{
+			"request": sawmill.ColorCyan,
+			"error":   sawmill.ColorBrightRed,
+		}),
 	))
 
 	jsonLogger.Info("JSON with custom options",
@@ -65,10 +63,9 @@ func main() {
 
 	// Logger writing to file with rotation
 	fileLogger := sawmill.New(sawmill.NewTextHandler(
-		sawmill.NewHandlerOptions().
-			WithFile("/tmp/sawmill-example.log", 10*1024*1024, true). // 10MB, compressed
-			WithTimeFormat("2006-01-02T15:04:05.000Z07:00").
-			WithAttributeFormat("nested"),
+		sawmill.WithFile("/tmp/sawmill-example.log", 10*1024*1024, true), // 10MB, compressed
+		sawmill.WithTimeFormat("2006-01-02T15:04:05.000Z07:00"),
+		sawmill.WithAttributeFormat("nested"),
 	))
 
 	fileLogger.Info("Writing to file",
@@ -79,18 +76,21 @@ func main() {
 
 	// === Multiple Format Comparison ===
 
-	baseOptions := sawmill.NewHandlerOptions().
-		WithColorsEnabled(true).
-		WithColorMappings(map[string]string{
+	// Base options as slice for reuse
+	baseOptions := []sawmill.HandlerOption{
+		sawmill.WithColorsEnabled(true),
+		sawmill.WithColorMappings(map[string]string{
 			"service": sawmill.ColorMagenta,
 			"db":      sawmill.ColorYellow,
-		})
+		}),
+	}
 
 	// Same options, different formatters
-	textCompareLogger := sawmill.New(sawmill.NewTextHandler(baseOptions))
-	jsonCompareLogger := sawmill.New(sawmill.NewJSONHandler(
-		baseOptions.WithPrettyPrint(true),
-	))
+	textCompareLogger := sawmill.New(sawmill.NewTextHandler(baseOptions...))
+	
+	// Extend base options with additional options
+	jsonOptions := append(baseOptions, sawmill.WithPrettyPrint(true))
+	jsonCompareLogger := sawmill.New(sawmill.NewJSONHandler(jsonOptions...))
 	xmlCompareLogger := sawmill.New(sawmill.NewXMLHandlerWithDefaults())
 	yamlCompareLogger := sawmill.New(sawmill.NewYAMLHandlerWithDefaults())
 
@@ -112,15 +112,13 @@ func main() {
 
 	// Different attribute keys for organization
 	userDataLogger := sawmill.New(sawmill.NewJSONHandler(
-		sawmill.NewHandlerOptions().
-			WithAttributesKey("user_data").
-			WithPrettyPrint(true),
+		sawmill.WithAttributesKey("user_data"),
+		sawmill.WithPrettyPrint(true),
 	))
 
 	requestDataLogger := sawmill.New(sawmill.NewJSONHandler(
-		sawmill.NewHandlerOptions().
-			WithAttributesKey("request_metadata").
-			WithPrettyPrint(true),
+		sawmill.WithAttributesKey("request_metadata"),
+		sawmill.WithPrettyPrint(true),
 	))
 
 	userDataLogger.Info("User event", "profile.name", "Alice", "profile.role", "admin")
@@ -130,11 +128,11 @@ func main() {
 
 	// Different loggers with different minimum levels
 	debugLogger := sawmill.New(sawmill.NewTextHandler(
-		sawmill.NewHandlerOptions().WithLevel(sawmill.LevelDebug),
+		sawmill.WithLevel(sawmill.LevelDebug),
 	))
 
 	warnLogger := sawmill.New(sawmill.NewTextHandler(
-		sawmill.NewHandlerOptions().WithLevel(sawmill.LevelWarn),
+		sawmill.WithLevel(sawmill.LevelWarn),
 	))
 
 	// These will be filtered based on level configuration
