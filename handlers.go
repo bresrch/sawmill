@@ -592,37 +592,13 @@ func (h *temporaryHandler) Handle(ctx context.Context, record *Record) error {
 	}
 
 	// Get the buffer from the original handler to write to
-	var buffer Buffer
-	
-	switch originalHandler := h.originalHandler.(type) {
-	case *TextHandler:
-		originalHandler.mu.RLock()
-		buffer = originalHandler.buffer
-		originalHandler.mu.RUnlock()
-	case *JSONHandler:
-		originalHandler.mu.RLock()
-		buffer = originalHandler.buffer
-		originalHandler.mu.RUnlock()
-	case *XMLHandler:
-		originalHandler.mu.RLock()
-		buffer = originalHandler.buffer
-		originalHandler.mu.RUnlock()
-	case *YAMLHandler:
-		originalHandler.mu.RLock()
-		buffer = originalHandler.buffer
-		originalHandler.mu.RUnlock()
-	case *KeyValueHandler:
-		originalHandler.mu.RLock()
-		buffer = originalHandler.buffer
-		originalHandler.mu.RUnlock()
-	case *BaseHandler:
-		originalHandler.mu.RLock()
-		buffer = originalHandler.buffer
-		originalHandler.mu.RUnlock()
-	default:
+	bufferProvider, ok := h.originalHandler.(BufferProvider)
+	if !ok {
 		// Fallback: use the original handler's Handle method
 		return h.originalHandler.Handle(ctx, record)
 	}
+	
+	buffer := bufferProvider.GetBuffer()
 
 	// Write to the original handler's buffer
 	_, err = buffer.Write(data)
