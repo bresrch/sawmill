@@ -11,7 +11,7 @@ import (
 func main() {
 	// Base logger for demonstration
 	baseLogger := sawmill.New(sawmill.NewJSONHandler(
-		sawmill.NewHandlerOptions().WithPrettyPrint(true),
+		sawmill.WithPrettyPrint(true),
 	))
 
 	// === Basic Callback - Add Runtime Information ===

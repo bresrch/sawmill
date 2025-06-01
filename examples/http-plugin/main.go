@@ -31,13 +31,12 @@ type Server struct {
 // NewServer creates a new server instance
 func NewServer() *Server {
 	// Create logger with JSON output
-	handler := sawmill.NewJSONHandler(
-		sawmill.NewHandlerOptions().
-			WithLevel(sawmill.LevelInfo).
-			WithStdout(),
-	)
+	options := []sawmill.HandlerOption{
+		sawmill.WithLevel(sawmill.LevelInfo),
+		sawmill.WithStdout(),
+	}
 
-	logger := sawmill.New(handler)
+	logger := sawmill.New(sawmill.NewJSONHandler(options...))
 
 	// Sample users data
 	users := []User{

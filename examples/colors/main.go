@@ -17,17 +17,15 @@ func main() {
 
 	// Text logger with colors
 	textLogger := sawmill.New(sawmill.NewTextHandler(
-		sawmill.NewHandlerOptions().
-			WithColorsEnabled(true).
-			WithColorMappings(colorMappings),
+		sawmill.WithColorsEnabled(true),
+		sawmill.WithColorMappings(colorMappings),
 	))
 
 	// JSON logger with colors
 	jsonLogger := sawmill.New(sawmill.NewJSONHandler(
-		sawmill.NewHandlerOptions().
-			WithColorsEnabled(true).
-			WithColorMappings(colorMappings).
-			WithPrettyPrint(true),
+		sawmill.WithColorsEnabled(true),
+		sawmill.WithColorMappings(colorMappings),
+		sawmill.WithPrettyPrint(true),
 	))
 
 	// Demonstrate colored text output

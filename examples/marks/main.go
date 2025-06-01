@@ -7,7 +7,7 @@ import (
 func main() {
 	// Text logger with colors for better mark visualization
 	textLogger := sawmill.New(sawmill.NewTextHandler(
-		sawmill.NewHandlerOptions().WithColorsEnabled(true),
+		sawmill.WithColorsEnabled(true),
 	))
 
 	// JSON logger

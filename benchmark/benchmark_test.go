@@ -83,26 +83,29 @@ type ResponseInfo struct {
 
 // Setup functions for each logger
 func setupSawmill() sawmill.Logger {
-	options := sawmill.NewHandlerOptions().
-		WithWriter(discardWriter).
-		WithLevel(sawmill.LevelInfo)
-	handler := sawmill.NewJSONHandler(options)
+	options := []sawmill.HandlerOption{
+		sawmill.WithWriter(discardWriter),
+		sawmill.WithLevel(sawmill.LevelInfo),
+	}
+	handler := sawmill.NewJSONHandler(options...)
 	return sawmill.New(handler)
 }
 
 func setupSawmillDebug() sawmill.Logger {
-	options := sawmill.NewHandlerOptions().
-		WithWriter(discardWriter).
-		WithLevel(sawmill.LevelDebug)
-	handler := sawmill.NewJSONHandler(options)
+	options := []sawmill.HandlerOption{
+		sawmill.WithWriter(discardWriter),
+		sawmill.WithLevel(sawmill.LevelDebug),
+	}
+	handler := sawmill.NewJSONHandler(options...)
 	return sawmill.New(handler)
 }
 
 func setupSawmillWarn() sawmill.Logger {
-	options := sawmill.NewHandlerOptions().
-		WithWriter(discardWriter).
-		WithLevel(sawmill.LevelWarn)
-	handler := sawmill.NewJSONHandler(options)
+	options := []sawmill.HandlerOption{
+		sawmill.WithWriter(discardWriter),
+		sawmill.WithLevel(sawmill.LevelWarn),
+	}
+	handler := sawmill.NewJSONHandler(options...)
 	return sawmill.New(handler)
 }
 

@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// HandlerOptions configures handler behavior using the options pattern
+// HandlerOptions configures handler behavior using the functional options pattern
 type HandlerOptions struct {
 	level         Level
 	destination   Destination
@@ -22,9 +22,12 @@ type HandlerOptions struct {
 	attrFormat    string
 }
 
-// NewHandlerOptions creates a new HandlerOptions with sensible defaults
-func NewHandlerOptions() *HandlerOptions {
-	return &HandlerOptions{
+// HandlerOption is a function that configures HandlerOptions
+type HandlerOption func(*HandlerOptions)
+
+// NewHandlerOptions creates a new HandlerOptions with the given options
+func NewHandlerOptions(options ...HandlerOption) *HandlerOptions {
+	opts := &HandlerOptions{
 		level:         LevelInfo,
 		destination:   NewWriterDestination(os.Stdout),
 		sawmillOpts:   nil,
@@ -38,95 +41,116 @@ func NewHandlerOptions() *HandlerOptions {
 		colorOutput:   false,
 		attrFormat:    "nested",
 	}
+	
+	for _, option := range options {
+		option(opts)
+	}
+	
+	return opts
 }
 
 // WithLevel sets the minimum log level
-func (opts *HandlerOptions) WithLevel(level Level) *HandlerOptions {
-	opts.level = level
-	return opts
+func WithLevel(level Level) HandlerOption {
+	return func(opts *HandlerOptions) {
+		opts.level = level
+	}
 }
 
 // WithDestination sets the output destination
-func (opts *HandlerOptions) WithDestination(dest Destination) *HandlerOptions {
-	opts.destination = dest
-	return opts
+func WithDestination(dest Destination) HandlerOption {
+	return func(opts *HandlerOptions) {
+		opts.destination = dest
+	}
 }
 
 // WithSawmillOptions sets the sawmill configuration options
-func (opts *HandlerOptions) WithSawmillOptions(sawmillOpts *SawmillOptions) *HandlerOptions {
-	opts.sawmillOpts = sawmillOpts
-	return opts
+func WithSawmillOptions(sawmillOpts *SawmillOptions) HandlerOption {
+	return func(opts *HandlerOptions) {
+		opts.sawmillOpts = sawmillOpts
+	}
 }
 
 // WithAttributesKey sets the key name for attributes in formatted output
-func (opts *HandlerOptions) WithAttributesKey(key string) *HandlerOptions {
-	opts.attributesKey = key
-	return opts
+func WithAttributesKey(key string) HandlerOption {
+	return func(opts *HandlerOptions) {
+		opts.attributesKey = key
+	}
 }
 
 // WithColorMappings sets custom color mappings for specific keys
-func (opts *HandlerOptions) WithColorMappings(mappings map[string]string) *HandlerOptions {
-	opts.colorMappings = mappings
-	return opts
+func WithColorMappings(mappings map[string]string) HandlerOption {
+	return func(opts *HandlerOptions) {
+		opts.colorMappings = mappings
+	}
 }
 
 // WithColorsEnabled enables or disables color output
-func (opts *HandlerOptions) WithColorsEnabled(enabled bool) *HandlerOptions {
-	opts.enableColors = enabled
-	opts.colorOutput = enabled
-	return opts
+func WithColorsEnabled(enabled bool) HandlerOption {
+	return func(opts *HandlerOptions) {
+		opts.enableColors = enabled
+		opts.colorOutput = enabled
+	}
 }
 
 // WithTimeFormat sets the time format for timestamps
-func (opts *HandlerOptions) WithTimeFormat(format string) *HandlerOptions {
-	opts.timeFormat = format
-	return opts
+func WithTimeFormat(format string) HandlerOption {
+	return func(opts *HandlerOptions) {
+		opts.timeFormat = format
+	}
 }
 
 // WithPrettyPrint enables or disables pretty printing for JSON
-func (opts *HandlerOptions) WithPrettyPrint(enabled bool) *HandlerOptions {
-	opts.prettyPrint = enabled
-	return opts
+func WithPrettyPrint(enabled bool) HandlerOption {
+	return func(opts *HandlerOptions) {
+		opts.prettyPrint = enabled
+	}
 }
 
 // WithSourceInfo enables or disables source location information
-func (opts *HandlerOptions) WithSourceInfo(enabled bool) *HandlerOptions {
-	opts.includeSource = enabled
-	return opts
+func WithSourceInfo(enabled bool) HandlerOption {
+	return func(opts *HandlerOptions) {
+		opts.includeSource = enabled
+	}
 }
 
 // WithLevelInfo enables or disables log level in output
-func (opts *HandlerOptions) WithLevelInfo(enabled bool) *HandlerOptions {
-	opts.includeLevel = enabled
-	return opts
+func WithLevelInfo(enabled bool) HandlerOption {
+	return func(opts *HandlerOptions) {
+		opts.includeLevel = enabled
+	}
 }
 
 // WithAttributeFormat sets the attribute format ("flat" or "nested")
-func (opts *HandlerOptions) WithAttributeFormat(format string) *HandlerOptions {
-	opts.attrFormat = format
-	return opts
+func WithAttributeFormat(format string) HandlerOption {
+	return func(opts *HandlerOptions) {
+		opts.attrFormat = format
+	}
 }
 
 // WithWriter is a convenience method to set a writer destination
-func (opts *HandlerOptions) WithWriter(writer io.Writer) *HandlerOptions {
-	opts.destination = NewWriterDestination(writer)
-	return opts
+func WithWriter(writer io.Writer) HandlerOption {
+	return func(opts *HandlerOptions) {
+		opts.destination = NewWriterDestination(writer)
+	}
 }
 
 // WithFile is a convenience method to set a file destination
-func (opts *HandlerOptions) WithFile(path string, maxSize int64, compress bool) *HandlerOptions {
-	opts.destination = NewFileDestination(path, maxSize, 0, compress)
-	return opts
+func WithFile(path string, maxSize int64, compress bool) HandlerOption {
+	return func(opts *HandlerOptions) {
+		opts.destination = NewFileDestination(path, maxSize, 0, compress)
+	}
 }
 
 // WithStdout is a convenience method to set stdout as destination
-func (opts *HandlerOptions) WithStdout() *HandlerOptions {
-	opts.destination = NewWriterDestination(os.Stdout)
-	return opts
+func WithStdout() HandlerOption {
+	return func(opts *HandlerOptions) {
+		opts.destination = NewWriterDestination(os.Stdout)
+	}
 }
 
 // WithStderr is a convenience method to set stderr as destination
-func (opts *HandlerOptions) WithStderr() *HandlerOptions {
-	opts.destination = NewWriterDestination(os.Stderr)
-	return opts
+func WithStderr() HandlerOption {
+	return func(opts *HandlerOptions) {
+		opts.destination = NewWriterDestination(os.Stderr)
+	}
 }

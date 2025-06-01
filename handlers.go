@@ -148,14 +148,12 @@ type TextHandler struct {
 }
 
 // NewTextHandler creates a new text handler with the given options
-func NewTextHandler(options *HandlerOptions) *TextHandler {
-	if options == nil {
-		options = NewHandlerOptions()
-	}
+func NewTextHandler(options ...HandlerOption) *TextHandler {
+	opts := NewHandlerOptions(options...)
 
-	buffer := createBuffer(options)
-	level := determineLevel(options)
-	formatter := createTextFormatter(options)
+	buffer := createBuffer(opts)
+	level := determineLevel(opts)
+	formatter := createTextFormatter(opts)
 
 	return &TextHandler{
 		BaseHandler: NewBaseHandler(formatter, buffer, level),
@@ -164,7 +162,7 @@ func NewTextHandler(options *HandlerOptions) *TextHandler {
 
 // NewTextHandlerWithDefaults creates a text handler with default options
 func NewTextHandlerWithDefaults() *TextHandler {
-	return NewTextHandler(NewHandlerOptions())
+	return NewTextHandler()
 }
 
 // JSONHandler implements Handler for JSON output
@@ -173,14 +171,12 @@ type JSONHandler struct {
 }
 
 // NewJSONHandler creates a new JSON handler with the given options
-func NewJSONHandler(options *HandlerOptions) *JSONHandler {
-	if options == nil {
-		options = NewHandlerOptions()
-	}
+func NewJSONHandler(options ...HandlerOption) *JSONHandler {
+	opts := NewHandlerOptions(options...)
 
-	buffer := createBuffer(options)
-	level := determineLevel(options)
-	formatter := createJSONFormatter(options)
+	buffer := createBuffer(opts)
+	level := determineLevel(opts)
+	formatter := createJSONFormatter(opts)
 
 	return &JSONHandler{
 		BaseHandler: NewBaseHandler(formatter, buffer, level),
@@ -189,7 +185,7 @@ func NewJSONHandler(options *HandlerOptions) *JSONHandler {
 
 // NewJSONHandlerWithDefaults creates a JSON handler with default options
 func NewJSONHandlerWithDefaults() *JSONHandler {
-	return NewJSONHandler(NewHandlerOptions())
+	return NewJSONHandler()
 }
 
 // XMLHandler implements Handler for XML output
@@ -198,14 +194,12 @@ type XMLHandler struct {
 }
 
 // NewXMLHandler creates a new XML handler with the given options
-func NewXMLHandler(options *HandlerOptions) *XMLHandler {
-	if options == nil {
-		options = NewHandlerOptions()
-	}
+func NewXMLHandler(options ...HandlerOption) *XMLHandler {
+	opts := NewHandlerOptions(options...)
 
-	buffer := createBuffer(options)
-	level := determineLevel(options)
-	formatter := createXMLFormatter(options)
+	buffer := createBuffer(opts)
+	level := determineLevel(opts)
+	formatter := createXMLFormatter(opts)
 
 	return &XMLHandler{
 		BaseHandler: NewBaseHandler(formatter, buffer, level),
@@ -214,7 +208,7 @@ func NewXMLHandler(options *HandlerOptions) *XMLHandler {
 
 // NewXMLHandlerWithDefaults creates an XML handler with default options
 func NewXMLHandlerWithDefaults() *XMLHandler {
-	return NewXMLHandler(NewHandlerOptions())
+	return NewXMLHandler()
 }
 
 // YAMLHandler implements Handler for YAML output
@@ -223,14 +217,12 @@ type YAMLHandler struct {
 }
 
 // NewYAMLHandler creates a new YAML handler with the given options
-func NewYAMLHandler(options *HandlerOptions) *YAMLHandler {
-	if options == nil {
-		options = NewHandlerOptions()
-	}
+func NewYAMLHandler(options ...HandlerOption) *YAMLHandler {
+	opts := NewHandlerOptions(options...)
 
-	buffer := createBuffer(options)
-	level := determineLevel(options)
-	formatter := createYAMLFormatter(options)
+	buffer := createBuffer(opts)
+	level := determineLevel(opts)
+	formatter := createYAMLFormatter(opts)
 
 	return &YAMLHandler{
 		BaseHandler: NewBaseHandler(formatter, buffer, level),
@@ -239,7 +231,7 @@ func NewYAMLHandler(options *HandlerOptions) *YAMLHandler {
 
 // NewYAMLHandlerWithDefaults creates a YAML handler with default options
 func NewYAMLHandlerWithDefaults() *YAMLHandler {
-	return NewYAMLHandler(NewHandlerOptions())
+	return NewYAMLHandler()
 }
 
 // KeyValueHandler implements Handler for key=value output
@@ -248,14 +240,12 @@ type KeyValueHandler struct {
 }
 
 // NewKeyValueHandler creates a new key-value handler with the given options
-func NewKeyValueHandler(options *HandlerOptions) *KeyValueHandler {
-	if options == nil {
-		options = NewHandlerOptions()
-	}
+func NewKeyValueHandler(options ...HandlerOption) *KeyValueHandler {
+	opts := NewHandlerOptions(options...)
 
-	buffer := createBuffer(options)
-	level := determineLevel(options)
-	formatter := createKeyValueFormatter(options)
+	buffer := createBuffer(opts)
+	level := determineLevel(opts)
+	formatter := createKeyValueFormatter(opts)
 
 	return &KeyValueHandler{
 		BaseHandler: NewBaseHandler(formatter, buffer, level),
@@ -264,7 +254,7 @@ func NewKeyValueHandler(options *HandlerOptions) *KeyValueHandler {
 
 // NewKeyValueHandlerWithDefaults creates a key-value handler with default options
 func NewKeyValueHandlerWithDefaults() *KeyValueHandler {
-	return NewKeyValueHandler(NewHandlerOptions())
+	return NewKeyValueHandler()
 }
 
 // MultiHandler allows writing to multiple handlers simultaneously
@@ -419,75 +409,75 @@ func (d *NetworkDestination) Close() error {
 }
 
 // NewJSONHandlerWithKey creates a JSON handler with a custom attributes key
-// Deprecated: Use NewJSONHandler with HandlerOptions.WithAttributesKey instead
+// Deprecated: Use NewJSONHandler with functional options instead
 func NewJSONHandlerWithKey(dest Destination, opts *SawmillOptions, attributesKey string) *JSONHandler {
-	handlerOpts := NewHandlerOptions().
-		WithDestination(dest).
-		WithAttributesKey(attributesKey)
+	var options []HandlerOption
+	options = append(options, WithDestination(dest))
+	options = append(options, WithAttributesKey(attributesKey))
 
 	if opts != nil {
-		handlerOpts = handlerOpts.WithSawmillOptions(opts)
+		options = append(options, WithSawmillOptions(opts))
 	}
 
-	return NewJSONHandler(handlerOpts)
+	return NewJSONHandler(options...)
 }
 
 // NewXMLHandlerWithKey creates an XML handler with a custom attributes key
-// Deprecated: Use NewXMLHandler with HandlerOptions.WithAttributesKey instead
+// Deprecated: Use NewXMLHandler with functional options instead
 func NewXMLHandlerWithKey(dest Destination, opts *SawmillOptions, attributesKey string) *XMLHandler {
-	handlerOpts := NewHandlerOptions().
-		WithDestination(dest).
-		WithAttributesKey(attributesKey)
+	var options []HandlerOption
+	options = append(options, WithDestination(dest))
+	options = append(options, WithAttributesKey(attributesKey))
 
 	if opts != nil {
-		handlerOpts = handlerOpts.WithSawmillOptions(opts)
+		options = append(options, WithSawmillOptions(opts))
 	}
 
-	return NewXMLHandler(handlerOpts)
+	return NewXMLHandler(options...)
 }
 
 // NewYAMLHandlerWithKey creates a YAML handler with a custom attributes key
-// Deprecated: Use NewYAMLHandler with HandlerOptions.WithAttributesKey instead
+// Deprecated: Use NewYAMLHandler with functional options instead
 func NewYAMLHandlerWithKey(dest Destination, opts *SawmillOptions, attributesKey string) *YAMLHandler {
-	handlerOpts := NewHandlerOptions().
-		WithDestination(dest).
-		WithAttributesKey(attributesKey)
+	var options []HandlerOption
+	options = append(options, WithDestination(dest))
+	options = append(options, WithAttributesKey(attributesKey))
 
 	if opts != nil {
-		handlerOpts = handlerOpts.WithSawmillOptions(opts)
+		options = append(options, WithSawmillOptions(opts))
 	}
 
-	return NewYAMLHandler(handlerOpts)
+	return NewYAMLHandler(options...)
 }
 
 // NewTextHandlerWithColors creates a text handler with custom color mappings
-// Deprecated: Use NewTextHandler with HandlerOptions.WithColorMappings and WithColorsEnabled instead
+// Deprecated: Use NewTextHandler with functional options instead
 func NewTextHandlerWithColors(dest Destination, opts *SawmillOptions, colorMappings map[string]string, enableColors bool) *TextHandler {
-	handlerOpts := NewHandlerOptions().
-		WithDestination(dest).
-		WithColorMappings(colorMappings).
-		WithColorsEnabled(enableColors)
+	var options []HandlerOption
+	options = append(options, WithDestination(dest))
+	options = append(options, WithColorMappings(colorMappings))
+	options = append(options, WithColorsEnabled(enableColors))
 
 	if opts != nil {
-		handlerOpts = handlerOpts.WithSawmillOptions(opts)
+		options = append(options, WithSawmillOptions(opts))
 	}
 
-	return NewTextHandler(handlerOpts)
+	return NewTextHandler(options...)
 }
 
 // NewJSONHandlerWithColors creates a JSON handler with custom color mappings
-// Deprecated: Use NewJSONHandler with HandlerOptions.WithColorMappings and WithColorsEnabled instead
+// Deprecated: Use NewJSONHandler with functional options instead
 func NewJSONHandlerWithColors(dest Destination, opts *SawmillOptions, colorMappings map[string]string, enableColors bool) *JSONHandler {
-	handlerOpts := NewHandlerOptions().
-		WithDestination(dest).
-		WithColorMappings(colorMappings).
-		WithColorsEnabled(enableColors)
+	var options []HandlerOption
+	options = append(options, WithDestination(dest))
+	options = append(options, WithColorMappings(colorMappings))
+	options = append(options, WithColorsEnabled(enableColors))
 
 	if opts != nil {
-		handlerOpts = handlerOpts.WithSawmillOptions(opts)
+		options = append(options, WithSawmillOptions(opts))
 	}
 
-	return NewJSONHandler(handlerOpts)
+	return NewJSONHandler(options...)
 }
 
 // Helper functions for the options pattern

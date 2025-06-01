@@ -37,8 +37,11 @@ type SawmillOptions struct {
 	EnableMetrics bool `json:"enable_metrics,omitempty"`
 }
 
-func NewSawmillOptions() *SawmillOptions {
-	return &SawmillOptions{
+// SawmillOption is a function that configures SawmillOptions
+type SawmillOption func(*SawmillOptions)
+
+func NewSawmillOptions(options ...SawmillOption) *SawmillOptions {
+	opts := &SawmillOptions{
 		LogFile:       "",
 		LogLevel:      "info",
 		LogFormat:     "text",
@@ -55,6 +58,124 @@ func NewSawmillOptions() *SawmillOptions {
 		EnablePanic:   true,
 		EnableTrace:   false,
 		EnableMetrics: false,
+	}
+	
+	for _, option := range options {
+		option(opts)
+	}
+	
+	return opts
+}
+
+// WithLogFile sets the log file path
+func WithLogFile(logFile string) SawmillOption {
+	return func(opts *SawmillOptions) {
+		opts.LogFile = logFile
+	}
+}
+
+// WithLogLevel sets the log level
+func WithLogLevel(logLevel string) SawmillOption {
+	return func(opts *SawmillOptions) {
+		opts.LogLevel = logLevel
+	}
+}
+
+// WithLogFormat sets the log format
+func WithLogFormat(logFormat string) SawmillOption {
+	return func(opts *SawmillOptions) {
+		opts.LogFormat = logFormat
+	}
+}
+
+// WithCallInfo enables or disables call information
+func WithCallInfo(callInfo bool) SawmillOption {
+	return func(opts *SawmillOptions) {
+		opts.CallInfo = callInfo
+	}
+}
+
+// WithMaxSize sets the maximum log file size
+func WithMaxSize(maxSize int) SawmillOption {
+	return func(opts *SawmillOptions) {
+		opts.MaxSize = maxSize
+	}
+}
+
+// WithMaxBackups sets the maximum number of backup files
+func WithMaxBackups(maxBackups int) SawmillOption {
+	return func(opts *SawmillOptions) {
+		opts.MaxBackups = maxBackups
+	}
+}
+
+// WithMaxAge sets the maximum age of log files
+func WithMaxAge(maxAge int) SawmillOption {
+	return func(opts *SawmillOptions) {
+		opts.MaxAge = maxAge
+	}
+}
+
+// WithCompress enables or disables compression
+func WithCompress(compress bool) SawmillOption {
+	return func(opts *SawmillOptions) {
+		opts.Compress = compress
+	}
+}
+
+// WithEnableDebug enables or disables debug logging
+func WithEnableDebug(enable bool) SawmillOption {
+	return func(opts *SawmillOptions) {
+		opts.EnableDebug = enable
+	}
+}
+
+// WithEnableInfo enables or disables info logging
+func WithEnableInfo(enable bool) SawmillOption {
+	return func(opts *SawmillOptions) {
+		opts.EnableInfo = enable
+	}
+}
+
+// WithEnableWarn enables or disables warn logging
+func WithEnableWarn(enable bool) SawmillOption {
+	return func(opts *SawmillOptions) {
+		opts.EnableWarn = enable
+	}
+}
+
+// WithEnableError enables or disables error logging
+func WithEnableError(enable bool) SawmillOption {
+	return func(opts *SawmillOptions) {
+		opts.EnableError = enable
+	}
+}
+
+// WithEnableFatal enables or disables fatal logging
+func WithEnableFatal(enable bool) SawmillOption {
+	return func(opts *SawmillOptions) {
+		opts.EnableFatal = enable
+	}
+}
+
+// WithEnablePanic enables or disables panic logging
+func WithEnablePanic(enable bool) SawmillOption {
+	return func(opts *SawmillOptions) {
+		opts.EnablePanic = enable
+	}
+}
+
+// WithEnableTrace enables or disables trace logging
+func WithEnableTrace(enable bool) SawmillOption {
+	return func(opts *SawmillOptions) {
+		opts.EnableTrace = enable
+	}
+}
+
+// WithEnableMetrics enables or disables metrics logging
+func WithEnableMetrics(enable bool) SawmillOption {
+	return func(opts *SawmillOptions) {
+		opts.EnableMetrics = enable
 	}
 }
 
