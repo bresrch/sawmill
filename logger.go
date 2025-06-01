@@ -40,7 +40,7 @@ func (l *logger) Log(ctx context.Context, level Level, msg string, args ...inter
 
 	record := NewRecord(level, msg)
 	record.Context = ctx
-	
+
 	var pcs [1]uintptr
 	runtime.Callers(3, pcs[:])
 	record.PC = pcs[0]
@@ -183,10 +183,10 @@ func (l *logger) Handler() Handler {
 func (l *logger) clone() *logger {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
-	
+
 	newGroups := make([]string, len(l.groups))
 	copy(newGroups, l.groups)
-	
+
 	newCallbacks := make([]CallbackFunc, len(l.callbacks))
 	copy(newCallbacks, l.callbacks)
 

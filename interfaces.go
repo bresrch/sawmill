@@ -84,7 +84,7 @@ type Handler interface {
 type Logger interface {
 	Log(ctx context.Context, level Level, msg string, args ...interface{})
 	LogRecord(ctx context.Context, record *Record)
-	
+
 	Trace(msg string, args ...interface{})
 	Debug(msg string, args ...interface{})
 	Info(msg string, args ...interface{})
@@ -93,7 +93,7 @@ type Logger interface {
 	Fatal(msg string, args ...interface{})
 	Panic(msg string, args ...interface{})
 	Mark(msg string, args ...interface{})
-	
+
 	WithNested(keyPath []string, value interface{}) Logger
 	WithDot(dotPath string, value interface{}) Logger
 	WithGroup(name string) Logger

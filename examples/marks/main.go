@@ -9,22 +9,22 @@ func main() {
 	textLogger := sawmill.New(sawmill.NewTextHandler(
 		sawmill.NewHandlerOptions().WithColorsEnabled(true),
 	))
-	
+
 	// JSON logger
 	jsonLogger := sawmill.New(sawmill.NewJSONHandlerWithDefaults())
 
 	// === Text Format Marks ===
-	
+
 	// Simple mark without attributes
 	textLogger.Mark("Application Startup")
 	textLogger.Info("Loading configuration")
 	textLogger.Info("Connecting to database")
 	textLogger.Info("Starting HTTP server")
-	
+
 	// Mark with attributes
-	textLogger.Mark("Authentication Phase", 
-		"phase", "auth", 
-		"step", 1, 
+	textLogger.Mark("Authentication Phase",
+		"phase", "auth",
+		"step", 1,
 		"expected_users", 50,
 	)
 	textLogger.Info("Validating user credentials", "user_id", 123)
@@ -32,8 +32,8 @@ func main() {
 	textLogger.Info("Authentication successful", "session_id", "sess-abc-123")
 
 	// Mark for error scenarios
-	textLogger.Mark("Error Recovery Phase", 
-		"phase", "recovery", 
+	textLogger.Mark("Error Recovery Phase",
+		"phase", "recovery",
 		"error_count", 3,
 		"retry_attempt", 2,
 	)
@@ -42,12 +42,12 @@ func main() {
 	textLogger.Info("Connection restored")
 
 	// === JSON Format Marks ===
-	
+
 	jsonLogger.Mark("Data Processing Phase")
 	jsonLogger.Info("Processing batch", "batch_id", "batch-001", "size", 1000)
 	jsonLogger.Info("Validation complete", "valid_records", 950, "invalid_records", 50)
-	
-	jsonLogger.Mark("Batch Complete", 
+
+	jsonLogger.Mark("Batch Complete",
 		"batch_id", "batch-001",
 		"total_processed", 1000,
 		"success_rate", 95.0,
@@ -55,32 +55,32 @@ func main() {
 	)
 
 	// === Complex Workflow with Multiple Marks ===
-	
+
 	textLogger.Mark("Data Import Workflow", "workflow_id", "import-2025-001")
-	
+
 	textLogger.Mark("Stage 1: File Validation", "stage", 1)
 	textLogger.Info("Checking file format")
 	textLogger.Info("Validating schema")
 	textLogger.Info("File validation passed")
-	
+
 	textLogger.Mark("Stage 2: Data Transformation", "stage", 2)
 	textLogger.Info("Parsing CSV data")
 	textLogger.Info("Applying business rules")
 	textLogger.Info("Data transformation complete")
-	
+
 	textLogger.Mark("Stage 3: Database Import", "stage", 3)
 	textLogger.Info("Starting transaction")
 	textLogger.Info("Inserting records", "count", 5000)
 	textLogger.Info("Committing transaction")
-	
-	textLogger.Mark("Workflow Complete", 
+
+	textLogger.Mark("Workflow Complete",
 		"workflow_id", "import-2025-001",
 		"total_records", 5000,
 		"status", "success",
 	)
 
 	// === Nested Attributes in Marks ===
-	
+
 	textLogger.Mark("Performance Test Results",
 		"test.name", "load_test_v1",
 		"test.duration.seconds", 300,

@@ -28,7 +28,7 @@ const (
 	ColorCyan    = "\033[36m"
 	ColorWhite   = "\033[37m"
 	ColorBold    = "\033[1m"
-	
+
 	// Bright colors
 	ColorBrightRed     = "\033[91m"
 	ColorBrightGreen   = "\033[92m"
@@ -117,17 +117,17 @@ func (cs *ColorScheme) colorizeJSON(jsonStr string) string {
 
 	result := []rune(jsonStr)
 	var output strings.Builder
-	
+
 	i := 0
 	for i < len(result) {
 		char := result[i]
-		
+
 		switch char {
 		case '"':
 			// Handle quoted strings (could be keys or values)
 			output.WriteRune('"') // Write opening quote
-			i++ // Skip opening quote
-			
+			i++                   // Skip opening quote
+
 			// Find the closing quote and collect content
 			contentStart := i
 			for i < len(result) && result[i] != '"' {
@@ -136,10 +136,10 @@ func (cs *ColorScheme) colorizeJSON(jsonStr string) string {
 				}
 				i++
 			}
-			
+
 			if i < len(result) {
 				quotedContent := string(result[contentStart:i])
-				
+
 				// Check if this is a key (followed by colon after closing quote)
 				isKey := false
 				j := i + 1 // Start after the closing quote
@@ -149,7 +149,7 @@ func (cs *ColorScheme) colorizeJSON(jsonStr string) string {
 				if j < len(result) && result[j] == ':' {
 					isKey = true
 				}
-				
+
 				if isKey {
 					coloredKey := cs.colorizeKey(quotedContent)
 					output.WriteString(coloredKey)
@@ -157,12 +157,12 @@ func (cs *ColorScheme) colorizeJSON(jsonStr string) string {
 					coloredValue := cs.StringValues + quotedContent + ColorReset
 					output.WriteString(coloredValue)
 				}
-				
+
 				output.WriteRune('"') // Write closing quote
-				i++ // Skip closing quote
+				i++                   // Skip closing quote
 			}
 			i-- // Adjust for loop increment
-			
+
 		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-':
 			// Handle numbers
 			start := i
@@ -178,7 +178,7 @@ func (cs *ColorScheme) colorizeJSON(jsonStr string) string {
 				output.WriteString(coloredNumber)
 			}
 			i-- // Back up one since the loop will increment
-			
+
 		case 't', 'f':
 			// Handle boolean values
 			if i+4 <= len(result) && string(result[i:i+4]) == "true" {
@@ -192,7 +192,7 @@ func (cs *ColorScheme) colorizeJSON(jsonStr string) string {
 			} else {
 				output.WriteRune(char)
 			}
-			
+
 		case 'n':
 			// Handle null values
 			if i+4 <= len(result) && string(result[i:i+4]) == "null" {
@@ -202,15 +202,15 @@ func (cs *ColorScheme) colorizeJSON(jsonStr string) string {
 			} else {
 				output.WriteRune(char)
 			}
-			
+
 		default:
 			// Preserve all other characters (including colons, commas, braces, etc.)
 			output.WriteRune(char)
 		}
-		
+
 		i++
 	}
-	
+
 	return output.String()
 }
 
@@ -246,17 +246,17 @@ func (cs *ColorScheme) colorizeAttributesJSON(attrs *RecursiveMap, indent int) s
 
 	var result strings.Builder
 	indentStr := strings.Repeat("  ", indent)
-	
+
 	result.WriteString("{\n")
-	
+
 	keys := attrs.Keys()
 	for i, key := range keys {
 		result.WriteString(indentStr + "  ")
-		
+
 		// Colorize key
 		coloredKey := cs.colorizeKey(key)
 		result.WriteString(`"` + coloredKey + `": `)
-		
+
 		child := attrs.children[key]
 		if child.IsLeaf() {
 			// Colorize value
@@ -267,13 +267,13 @@ func (cs *ColorScheme) colorizeAttributesJSON(attrs *RecursiveMap, indent int) s
 			nestedJSON := cs.colorizeAttributesJSON(child, indent+1)
 			result.WriteString(nestedJSON)
 		}
-		
+
 		if i < len(keys)-1 {
 			result.WriteString(",")
 		}
 		result.WriteString("\n")
 	}
-	
+
 	result.WriteString(indentStr + "}")
 	return result.String()
 }
@@ -281,14 +281,14 @@ func (cs *ColorScheme) colorizeAttributesJSON(attrs *RecursiveMap, indent int) s
 // colorizeAttributesFlat formats attributes in flat key=value format with colors
 func (cs *ColorScheme) colorizeAttributesFlat(attrs *RecursiveMap) string {
 	var parts []string
-	
+
 	attrs.Walk(func(path []string, value interface{}) {
 		keyPath := strings.Join(path, ".")
 		coloredKey := cs.colorizeKey(keyPath)
 		coloredValue := cs.colorizeValue(value)
 		parts = append(parts, coloredKey+"="+coloredValue)
 	})
-	
+
 	return strings.Join(parts, " ")
 }
 
@@ -300,12 +300,12 @@ func (cs *ColorScheme) colorizeAttributesNested(attrs *RecursiveMap, indent int)
 
 	var result strings.Builder
 	indentStr := strings.Repeat("  ", indent)
-	
+
 	for key, child := range attrs.children {
 		result.WriteString("\n" + indentStr)
 		coloredKey := cs.colorizeKey(key)
 		result.WriteString(coloredKey + ":")
-		
+
 		if child.IsLeaf() {
 			coloredValue := cs.colorizeValue(child.value)
 			result.WriteString(" " + coloredValue)
@@ -314,7 +314,7 @@ func (cs *ColorScheme) colorizeAttributesNested(attrs *RecursiveMap, indent int)
 			result.WriteString(nestedResult)
 		}
 	}
-	
+
 	return result.String()
 }
 

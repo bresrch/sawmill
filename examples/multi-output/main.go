@@ -8,7 +8,7 @@ import (
 
 func main() {
 	// === Multi-Handler Setup ===
-	
+
 	// Create multiple handlers with different configurations
 	multiHandler := sawmill.NewMultiHandler(
 		// Console output with colors (JSON)
@@ -23,7 +23,7 @@ func main() {
 					"error":  sawmill.ColorBrightRed,
 				}),
 		),
-		
+
 		// File output (Text format for readability)
 		sawmill.NewTextHandler(
 			sawmill.NewHandlerOptions().
@@ -31,7 +31,7 @@ func main() {
 				WithTimeFormat("2006-01-02 15:04:05.000").
 				WithAttributeFormat("flat"),
 		),
-		
+
 		// Key-value format to stdout (for monitoring tools)
 		sawmill.NewKeyValueHandler(
 			sawmill.NewHandlerOptions().
@@ -43,7 +43,7 @@ func main() {
 	logger := sawmill.New(multiHandler)
 
 	// === Log Events to All Handlers ===
-	
+
 	logger.Info("Application startup",
 		"system.version", "v1.2.3",
 		"system.environment", "production",
@@ -80,7 +80,7 @@ func main() {
 	)
 
 	// === Format-Specific Multi-Output ===
-	
+
 	// Create different handlers for different purposes
 	debugHandler := sawmill.NewMultiHandler(
 		// Detailed console output for development
@@ -92,7 +92,7 @@ func main() {
 				WithAttributeFormat("nested").
 				WithSourceInfo(true),
 		),
-		
+
 		// Machine-readable format for log aggregation
 		sawmill.NewJSONHandler(
 			sawmill.NewHandlerOptions().
@@ -114,7 +114,7 @@ func main() {
 	)
 
 	// === Conditional Multi-Output ===
-	
+
 	// Different handlers based on log level
 	productionHandler := sawmill.NewMultiHandler(
 		// Console for immediate feedback (only warnings and errors)
@@ -124,7 +124,7 @@ func main() {
 				WithLevel(sawmill.LevelWarn).
 				WithColorsEnabled(true),
 		),
-		
+
 		// File for all logs (info and above)
 		sawmill.NewJSONHandler(
 			sawmill.NewHandlerOptions().
@@ -132,7 +132,7 @@ func main() {
 				WithLevel(sawmill.LevelInfo).
 				WithTimeFormat("2006-01-02T15:04:05.000Z07:00"),
 		),
-		
+
 		// Error-only file for critical issues
 		sawmill.NewTextHandler(
 			sawmill.NewHandlerOptions().
@@ -150,7 +150,7 @@ func main() {
 	prodLogger.Error("Payment processing failed")  // Console + File + Error file
 
 	// === Multi-Format Comparison ===
-	
+
 	// Same data, multiple formats for comparison
 	comparisonHandler := sawmill.NewMultiHandler(
 		sawmill.NewTextHandlerWithDefaults(),
@@ -172,7 +172,7 @@ func main() {
 	)
 
 	// === Mark with Multi-Output ===
-	
+
 	logger.Mark("Processing Phase Complete",
 		"phase", "data_validation",
 		"records.total", 10000,

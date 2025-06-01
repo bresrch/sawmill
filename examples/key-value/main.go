@@ -6,10 +6,10 @@ import (
 
 func main() {
 	// === Basic Key-Value Format ===
-	
+
 	// Simple key-value logger without colors
 	kvLogger := sawmill.New(sawmill.NewKeyValueHandlerWithDefaults())
-	
+
 	kvLogger.Info("User authentication",
 		"user_id", 12345,
 		"username", "alice_doe",
@@ -27,18 +27,18 @@ func main() {
 	)
 
 	// === Colored Key-Value Format ===
-	
+
 	// Custom color mappings for different key patterns
 	colorMappings := map[string]string{
-		"user":        sawmill.ColorBrightBlue,   // All user.* keys
-		"request":     sawmill.ColorBrightGreen,  // All request.* keys
-		"response":    sawmill.ColorBrightCyan,   // All response.* keys
-		"server":      sawmill.ColorYellow,       // All server.* keys
-		"error":       sawmill.ColorBrightRed,    // All error.* keys
-		"db":          sawmill.ColorMagenta,      // All db.* keys
-		"metric":      sawmill.ColorBrightWhite,  // All metric.* keys
-		"status_code": sawmill.ColorCyan,         // Specific key
-		"duration_ms": sawmill.ColorGreen,        // Specific key
+		"user":        sawmill.ColorBrightBlue,  // All user.* keys
+		"request":     sawmill.ColorBrightGreen, // All request.* keys
+		"response":    sawmill.ColorBrightCyan,  // All response.* keys
+		"server":      sawmill.ColorYellow,      // All server.* keys
+		"error":       sawmill.ColorBrightRed,   // All error.* keys
+		"db":          sawmill.ColorMagenta,     // All db.* keys
+		"metric":      sawmill.ColorBrightWhite, // All metric.* keys
+		"status_code": sawmill.ColorCyan,        // Specific key
+		"duration_ms": sawmill.ColorGreen,       // Specific key
 	}
 
 	coloredKVLogger := sawmill.New(sawmill.NewKeyValueHandler(
@@ -65,7 +65,7 @@ func main() {
 	)
 
 	// === Error Scenarios with Key-Value ===
-	
+
 	coloredKVLogger.Error("Database connection failed",
 		"error.code", "DB_CONNECTION_TIMEOUT",
 		"error.message", "Connection timed out after 5000ms",
@@ -82,7 +82,7 @@ func main() {
 	)
 
 	// === Performance Metrics with Key-Value ===
-	
+
 	coloredKVLogger.Info("Performance metrics collected",
 		"metric.cpu.usage_percent", 68.5,
 		"metric.memory.used_gb", 3.2,
@@ -99,7 +99,7 @@ func main() {
 	)
 
 	// === Batch Processing with Key-Value ===
-	
+
 	coloredKVLogger.Info("Batch processing started",
 		"batch.id", "batch-2025-05-31-001",
 		"batch.type", "user_data_export",
@@ -114,7 +114,7 @@ func main() {
 	)
 
 	// === Mark Function with Key-Value Format ===
-	
+
 	coloredKVLogger.Mark("Data Processing Phase Started",
 		"phase", "data_processing",
 		"workflow_id", "wf-2025-001",
@@ -137,7 +137,7 @@ func main() {
 	)
 
 	// === Complex Nested Data with Key-Value ===
-	
+
 	coloredKVLogger.Info("API gateway metrics",
 		"request.api.version", "v2",
 		"request.api.endpoint", "/api/v2/users/search",
@@ -158,7 +158,7 @@ func main() {
 	)
 
 	// === Different Data Types Showcase ===
-	
+
 	coloredKVLogger.Debug("Data types showcase",
 		"string_value", "hello world",
 		"integer_positive", 42,

@@ -42,14 +42,14 @@ func NewJSONFormatterWithColors(colorMappings map[string]string) *JSONFormatter 
 
 func (f *JSONFormatter) Format(record *Record) ([]byte, error) {
 	output := make(map[string]interface{})
-	
+
 	output["timestamp"] = record.Time.Format(f.TimeFormat)
 	output["message"] = record.Message
-	
+
 	if f.IncludeLevel {
 		output["level"] = f.levelString(record.Level)
 	}
-	
+
 	if f.IncludeSource && record.PC != 0 {
 		if frame, ok := f.getFrame(record.PC); ok {
 			output["source"] = map[string]interface{}{
@@ -59,7 +59,7 @@ func (f *JSONFormatter) Format(record *Record) ([]byte, error) {
 			}
 		}
 	}
-	
+
 	// Add attributes as nested structure
 	if !record.Attributes.IsEmpty() {
 		attributesKey := f.AttributesKey
@@ -68,28 +68,28 @@ func (f *JSONFormatter) Format(record *Record) ([]byte, error) {
 		}
 		output[attributesKey] = record.Attributes.ToMap()
 	}
-	
+
 	var data []byte
 	var err error
-	
+
 	if f.PrettyPrint {
 		data, err = json.MarshalIndent(output, "", "  ")
 	} else {
 		data, err = json.Marshal(output)
 	}
-	
+
 	if err != nil {
 		return nil, err
 	}
-	
+
 	data = append(data, '\n')
-	
+
 	if f.ColorOutput && f.ColorScheme != nil {
 		f.ColorScheme.Enabled = true
 		coloredJSON := f.ColorScheme.colorizeJSON(string(data))
 		return []byte(coloredJSON), nil
 	}
-	
+
 	return data, nil
 }
 
@@ -137,11 +137,11 @@ func (f *XMLFormatter) Format(record *Record) ([]byte, error) {
 		Message:   record.Message,
 		Data:      make(map[string]interface{}),
 	}
-	
+
 	if f.IncludeLevel {
 		xmlRecord.Level = f.levelString(record.Level)
 	}
-	
+
 	if f.IncludeSource && record.PC != 0 {
 		if frame, ok := f.getFrame(record.PC); ok {
 			xmlRecord.Source = &XMLSource{
@@ -151,7 +151,7 @@ func (f *XMLFormatter) Format(record *Record) ([]byte, error) {
 			}
 		}
 	}
-	
+
 	if !record.Attributes.IsEmpty() {
 		attributesKey := f.AttributesKey
 		if attributesKey == "" {
@@ -159,12 +159,12 @@ func (f *XMLFormatter) Format(record *Record) ([]byte, error) {
 		}
 		xmlRecord.Data[attributesKey] = record.Attributes.ToMap()
 	}
-	
+
 	data, err := xml.MarshalIndent(xmlRecord, "", "  ")
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Add newline to separate XML records
 	data = append(data, '\n')
 	return data, nil
@@ -194,15 +194,15 @@ func NewYAMLFormatter() *YAMLFormatter {
 
 func (f *YAMLFormatter) Format(record *Record) ([]byte, error) {
 	var output strings.Builder
-	
+
 	output.WriteString(fmt.Sprintf("timestamp: %s\n", record.Time.Format(f.TimeFormat)))
-	
+
 	if f.IncludeLevel {
 		output.WriteString(fmt.Sprintf("level: %s\n", f.levelString(record.Level)))
 	}
-	
+
 	output.WriteString(fmt.Sprintf("message: %q\n", record.Message))
-	
+
 	if f.IncludeSource && record.PC != 0 {
 		if frame, ok := f.getFrame(record.PC); ok {
 			output.WriteString("source:\n")
@@ -211,7 +211,7 @@ func (f *YAMLFormatter) Format(record *Record) ([]byte, error) {
 			output.WriteString(fmt.Sprintf("  line: %d\n", frame.Line))
 		}
 	}
-	
+
 	if !record.Attributes.IsEmpty() {
 		attributesKey := f.AttributesKey
 		if attributesKey == "" {
@@ -220,18 +220,18 @@ func (f *YAMLFormatter) Format(record *Record) ([]byte, error) {
 		output.WriteString(fmt.Sprintf("%s:\n", attributesKey))
 		f.writeYAMLAttributes(&output, record.Attributes, 1)
 	}
-	
+
 	return []byte(output.String()), nil
 }
 
 func (f *YAMLFormatter) writeYAMLAttributes(output *strings.Builder, attrs *RecursiveMap, indent int) {
 	indentStr := strings.Repeat("  ", indent)
-	
+
 	if attrs.hasValue {
 		output.WriteString(fmt.Sprintf("%s%v\n", indentStr, attrs.value))
 		return
 	}
-	
+
 	for key, child := range attrs.children {
 		output.WriteString(fmt.Sprintf("%s%s:\n", indentStr, key))
 		f.writeYAMLAttributes(output, child, indent+1)
@@ -249,7 +249,7 @@ type TextFormatter struct {
 	IncludeLevel    bool
 	AttributeFormat string // "flat" or "nested"
 	ColorOutput     bool
-	AttributesKey   string     // Key name for attributes (unused in text format)
+	AttributesKey   string       // Key name for attributes (unused in text format)
 	ColorScheme     *ColorScheme // Color scheme for syntax highlighting
 }
 
@@ -275,13 +275,13 @@ func NewTextFormatterWithColors(colorMappings map[string]string) *TextFormatter 
 
 func (f *TextFormatter) Format(record *Record) ([]byte, error) {
 	var output strings.Builder
-	
+
 	if record.Level == LevelMark {
 		return f.formatMark(record)
 	}
-	
+
 	output.WriteString(record.Time.Format(f.TimeFormat))
-	
+
 	if f.IncludeLevel {
 		level := f.levelString(record.Level)
 		if f.ColorOutput {
@@ -289,13 +289,13 @@ func (f *TextFormatter) Format(record *Record) ([]byte, error) {
 		}
 		output.WriteString(fmt.Sprintf(" [%s]", level))
 	}
-	
+
 	if f.IncludeSource && record.PC != 0 {
 		if frame, ok := f.getFrame(record.PC); ok {
 			output.WriteString(fmt.Sprintf(" %s:%d", frame.File, frame.Line))
 		}
 	}
-	
+
 	output.WriteString(fmt.Sprintf(" %s", record.Message))
 	if !record.Attributes.IsEmpty() {
 		if f.ColorOutput && f.ColorScheme != nil {
@@ -310,20 +310,20 @@ func (f *TextFormatter) Format(record *Record) ([]byte, error) {
 			}
 		}
 	}
-	
+
 	output.WriteString("\n")
 	return []byte(output.String()), nil
 }
 
 func (f *TextFormatter) formatMark(record *Record) ([]byte, error) {
 	var output strings.Builder
-	
+
 	separator := strings.Repeat("=", 80)
-	
+
 	if f.ColorOutput {
 		output.WriteString(fmt.Sprintf("\033[44m%s\033[0m\n", separator))
 		output.WriteString(fmt.Sprintf("\033[1;44m MARK: %s \033[0m\n", record.Message))
-		
+
 		// Apply color to timestamp label and value
 		if f.ColorScheme != nil {
 			f.ColorScheme.Enabled = true
@@ -337,7 +337,7 @@ func (f *TextFormatter) formatMark(record *Record) ([]byte, error) {
 		output.WriteString(fmt.Sprintf("%s\n", separator))
 		output.WriteString(fmt.Sprintf(" MARKED @ %s ", record.Time.Format(f.TimeFormat)))
 	}
-	
+
 	if !record.Attributes.IsEmpty() {
 		if f.ColorOutput && f.ColorScheme != nil {
 			f.ColorScheme.Enabled = true
@@ -351,15 +351,15 @@ func (f *TextFormatter) formatMark(record *Record) ([]byte, error) {
 			}
 		}
 	}
-	
+
 	output.WriteString("\n")
-	
+
 	if f.ColorOutput {
 		output.WriteString(fmt.Sprintf("\033[44m%s\033[0m\n", separator))
 	} else {
 		output.WriteString(fmt.Sprintf("%s\n", separator))
 	}
-	
+
 	return []byte(output.String()), nil
 }
 
@@ -372,12 +372,12 @@ func (f *TextFormatter) writeTextAttributesFlat(output *strings.Builder, attrs *
 
 func (f *TextFormatter) writeTextAttributesNested(output *strings.Builder, attrs *RecursiveMap, indent int) {
 	indentStr := strings.Repeat("  ", indent)
-	
+
 	if attrs.hasValue {
 		output.WriteString(fmt.Sprintf("%s%v", indentStr, attrs.value))
 		return
 	}
-	
+
 	for key, child := range attrs.children {
 		output.WriteString(fmt.Sprintf("\n%s%s:", indentStr, key))
 		if child.IsLeaf() {
@@ -533,11 +533,11 @@ func NewKeyValueFormatterWithColors(colorMappings map[string]string) *KeyValueFo
 
 func (f *KeyValueFormatter) Format(record *Record) ([]byte, error) {
 	var output strings.Builder
-	
+
 	if record.Level == LevelMark {
 		return f.formatMark(record)
 	}
-	
+
 	// Start with timestamp
 	if f.ColorOutput && f.ColorScheme != nil {
 		f.ColorScheme.Enabled = true
@@ -545,7 +545,7 @@ func (f *KeyValueFormatter) Format(record *Record) ([]byte, error) {
 	} else {
 		output.WriteString(fmt.Sprintf("timestamp=%s", record.Time.Format(f.TimeFormat)))
 	}
-	
+
 	// Add level
 	if f.IncludeLevel {
 		level := f.levelString(record.Level)
@@ -556,7 +556,7 @@ func (f *KeyValueFormatter) Format(record *Record) ([]byte, error) {
 			output.WriteString(fmt.Sprintf(" level=%s", level))
 		}
 	}
-	
+
 	// Add source
 	if f.IncludeSource && record.PC != 0 {
 		if frame, ok := f.getFrame(record.PC); ok {
@@ -569,7 +569,7 @@ func (f *KeyValueFormatter) Format(record *Record) ([]byte, error) {
 			}
 		}
 	}
-	
+
 	// Add message
 	if f.ColorOutput && f.ColorScheme != nil {
 		output.WriteString(" ")
@@ -577,25 +577,25 @@ func (f *KeyValueFormatter) Format(record *Record) ([]byte, error) {
 	} else {
 		output.WriteString(fmt.Sprintf(" message=%s", record.Message))
 	}
-	
+
 	// Add attributes in flat key=value format
 	if !record.Attributes.IsEmpty() {
 		f.writeKeyValueAttributes(&output, record.Attributes)
 	}
-	
+
 	output.WriteString("\n")
 	return []byte(output.String()), nil
 }
 
 func (f *KeyValueFormatter) formatMark(record *Record) ([]byte, error) {
 	var output strings.Builder
-	
+
 	separator := strings.Repeat("=", 80)
-	
+
 	if f.ColorOutput {
 		output.WriteString(fmt.Sprintf("\033[44m%s\033[0m\n", separator))
 		output.WriteString(fmt.Sprintf("\033[1;44m MARK: %s \033[0m\n", record.Message))
-		
+
 		// Apply color to timestamp label and value
 		if f.ColorScheme != nil {
 			f.ColorScheme.Enabled = true
@@ -607,7 +607,7 @@ func (f *KeyValueFormatter) formatMark(record *Record) ([]byte, error) {
 		output.WriteString(fmt.Sprintf("%s\n", separator))
 		output.WriteString(fmt.Sprintf(" MARKED @ %s ", record.Time.Format(f.TimeFormat)))
 	}
-	
+
 	if !record.Attributes.IsEmpty() {
 		if f.ColorOutput && f.ColorScheme != nil {
 			f.ColorScheme.Enabled = true
@@ -616,15 +616,15 @@ func (f *KeyValueFormatter) formatMark(record *Record) ([]byte, error) {
 			f.writeKeyValueAttributes(&output, record.Attributes)
 		}
 	}
-	
+
 	output.WriteString("\n")
-	
+
 	if f.ColorOutput {
 		output.WriteString(fmt.Sprintf("\033[44m%s\033[0m\n", separator))
 	} else {
 		output.WriteString(fmt.Sprintf("%s\n", separator))
 	}
-	
+
 	return []byte(output.String()), nil
 }
 
@@ -647,16 +647,16 @@ func (f *KeyValueFormatter) formatKeyValue(key string, value string, newlinePref
 		}
 		return fmt.Sprintf("%s=%s", key, value)
 	}
-	
+
 	// Get the appropriate color for this key
 	color := f.getKeyColor(key)
-	
+
 	// Create dimmed version of the key
 	dimmedKey := f.dimColor(key, color)
-	
+
 	// Apply full color to the value
 	coloredValue := f.applyColor(value, color)
-	
+
 	if newlinePrefix {
 		return fmt.Sprintf("\n%s=%s", dimmedKey, coloredValue)
 	}
@@ -679,7 +679,7 @@ func (f *KeyValueFormatter) getKeyColor(keyPath string) string {
 	if f.ColorScheme == nil {
 		return ""
 	}
-	
+
 	// Check for exact match in custom mappings
 	if color, exists := f.ColorScheme.KeyMappings[keyPath]; exists {
 		return color

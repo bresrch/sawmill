@@ -7,12 +7,12 @@ import (
 func main() {
 	// Custom color mappings for different key patterns
 	colorMappings := map[string]string{
-		"user":        sawmill.ColorBrightBlue,   // All user.* keys will be bright blue
-		"request":     sawmill.ColorBrightGreen,  // All request.* keys will be bright green
-		"server":      sawmill.ColorYellow,       // All server.* keys will be yellow
-		"error":       sawmill.ColorBrightRed,    // All error.* keys will be bright red
-		"batch_id":    sawmill.ColorMagenta,      // Specific key coloring
-		"status_code": sawmill.ColorCyan,         // HTTP status codes in cyan
+		"user":        sawmill.ColorBrightBlue,  // All user.* keys will be bright blue
+		"request":     sawmill.ColorBrightGreen, // All request.* keys will be bright green
+		"server":      sawmill.ColorYellow,      // All server.* keys will be yellow
+		"error":       sawmill.ColorBrightRed,   // All error.* keys will be bright red
+		"batch_id":    sawmill.ColorMagenta,     // Specific key coloring
+		"status_code": sawmill.ColorCyan,        // HTTP status codes in cyan
 	}
 
 	// Text logger with colors

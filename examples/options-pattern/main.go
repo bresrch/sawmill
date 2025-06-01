@@ -6,7 +6,7 @@ import (
 
 func main() {
 	// === Basic Options Pattern Usage ===
-	
+
 	// Simple logger with default options
 	defaultLogger := sawmill.New(sawmill.NewTextHandlerWithDefaults())
 	defaultLogger.Info("Default configuration")
@@ -18,7 +18,7 @@ func main() {
 	customTimeLogger.Info("Custom time format")
 
 	// === Comprehensive Options Configuration ===
-	
+
 	// Text logger with all options configured
 	advancedTextLogger := sawmill.New(sawmill.NewTextHandler(
 		sawmill.NewHandlerOptions().
@@ -35,14 +35,14 @@ func main() {
 			WithStdout(),
 	))
 
-	advancedTextLogger.Debug("Advanced text logger", 
-		"user.id", 123, 
+	advancedTextLogger.Debug("Advanced text logger",
+		"user.id", 123,
 		"api.endpoint", "/users",
 		"api.method", "GET",
 	)
 
 	// === JSON Logger Options ===
-	
+
 	// JSON logger with pretty printing and custom attributes key
 	jsonLogger := sawmill.New(sawmill.NewJSONHandler(
 		sawmill.NewHandlerOptions().
@@ -62,7 +62,7 @@ func main() {
 	)
 
 	// === File Output Configuration ===
-	
+
 	// Logger writing to file with rotation
 	fileLogger := sawmill.New(sawmill.NewTextHandler(
 		sawmill.NewHandlerOptions().
@@ -71,14 +71,14 @@ func main() {
 			WithAttributeFormat("nested"),
 	))
 
-	fileLogger.Info("Writing to file", 
+	fileLogger.Info("Writing to file",
 		"file.path", "/tmp/sawmill-example.log",
 		"file.max_size_mb", 10,
 		"file.compressed", true,
 	)
 
 	// === Multiple Format Comparison ===
-	
+
 	baseOptions := sawmill.NewHandlerOptions().
 		WithColorsEnabled(true).
 		WithColorMappings(map[string]string{
@@ -109,7 +109,7 @@ func main() {
 	yamlCompareLogger.Info("Service metrics (YAML)", logData...)
 
 	// === Custom Attributes Key Demonstration ===
-	
+
 	// Different attribute keys for organization
 	userDataLogger := sawmill.New(sawmill.NewJSONHandler(
 		sawmill.NewHandlerOptions().
@@ -127,12 +127,12 @@ func main() {
 	requestDataLogger.Info("API request", "headers.content_type", "application/json", "method", "POST")
 
 	// === Level Configuration ===
-	
+
 	// Different loggers with different minimum levels
 	debugLogger := sawmill.New(sawmill.NewTextHandler(
 		sawmill.NewHandlerOptions().WithLevel(sawmill.LevelDebug),
 	))
-	
+
 	warnLogger := sawmill.New(sawmill.NewTextHandler(
 		sawmill.NewHandlerOptions().WithLevel(sawmill.LevelWarn),
 	))

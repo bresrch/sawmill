@@ -27,7 +27,7 @@ func main() {
 	// Using groups for hierarchical organization
 	userLogger := logger.WithGroup("user")
 	userLogger.Info("User action", "action", "login", "user_id", 123, "session_id", "abc-123")
-	
+
 	// Nested groups
 	requestLogger := userLogger.WithGroup("request")
 	requestLogger.Info("API call", "method", "POST", "endpoint", "/api/users", "duration_ms", 45)

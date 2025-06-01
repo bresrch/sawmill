@@ -36,7 +36,7 @@ func (h *BaseHandler) Handle(ctx context.Context, record *Record) error {
 	}
 
 	h.mu.RLock()
-	
+
 	// Create a copy of the record to avoid modifying the original
 	recordCopy := &Record{
 		Time:       record.Time,
@@ -66,7 +66,7 @@ func (h *BaseHandler) Handle(ctx context.Context, record *Record) error {
 func (h *BaseHandler) WithAttrs(attrs []slog.Attr) Handler {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	
+
 	newHandler := &BaseHandler{
 		formatter: h.formatter,
 		buffer:    h.buffer,
@@ -89,7 +89,7 @@ func (h *BaseHandler) WithAttrs(attrs []slog.Attr) Handler {
 func (h *BaseHandler) WithGroup(name string) Handler {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	
+
 	newGroups := make([]string, len(h.groups)+1)
 	copy(newGroups, h.groups)
 	newGroups[len(h.groups)] = name
@@ -123,7 +123,7 @@ func NewTextHandler(options *HandlerOptions) *TextHandler {
 	buffer := createBuffer(options)
 	level := determineLevel(options)
 	formatter := createTextFormatter(options)
-	
+
 	return &TextHandler{
 		BaseHandler: NewBaseHandler(formatter, buffer, level),
 	}
@@ -148,7 +148,7 @@ func NewJSONHandler(options *HandlerOptions) *JSONHandler {
 	buffer := createBuffer(options)
 	level := determineLevel(options)
 	formatter := createJSONFormatter(options)
-	
+
 	return &JSONHandler{
 		BaseHandler: NewBaseHandler(formatter, buffer, level),
 	}
@@ -173,7 +173,7 @@ func NewXMLHandler(options *HandlerOptions) *XMLHandler {
 	buffer := createBuffer(options)
 	level := determineLevel(options)
 	formatter := createXMLFormatter(options)
-	
+
 	return &XMLHandler{
 		BaseHandler: NewBaseHandler(formatter, buffer, level),
 	}
@@ -198,7 +198,7 @@ func NewYAMLHandler(options *HandlerOptions) *YAMLHandler {
 	buffer := createBuffer(options)
 	level := determineLevel(options)
 	formatter := createYAMLFormatter(options)
-	
+
 	return &YAMLHandler{
 		BaseHandler: NewBaseHandler(formatter, buffer, level),
 	}
@@ -223,7 +223,7 @@ func NewKeyValueHandler(options *HandlerOptions) *KeyValueHandler {
 	buffer := createBuffer(options)
 	level := determineLevel(options)
 	formatter := createKeyValueFormatter(options)
-	
+
 	return &KeyValueHandler{
 		BaseHandler: NewBaseHandler(formatter, buffer, level),
 	}
@@ -285,7 +285,7 @@ func (h *MultiHandler) WithGroup(name string) Handler {
 func (h *MultiHandler) Enabled(ctx context.Context, level Level) bool {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-	
+
 	for _, handler := range h.handlers {
 		if handler.Enabled(ctx, level) {
 			return true
@@ -391,11 +391,11 @@ func NewJSONHandlerWithKey(dest Destination, opts *SawmillOptions, attributesKey
 	handlerOpts := NewHandlerOptions().
 		WithDestination(dest).
 		WithAttributesKey(attributesKey)
-	
+
 	if opts != nil {
 		handlerOpts = handlerOpts.WithSawmillOptions(opts)
 	}
-	
+
 	return NewJSONHandler(handlerOpts)
 }
 
@@ -405,11 +405,11 @@ func NewXMLHandlerWithKey(dest Destination, opts *SawmillOptions, attributesKey 
 	handlerOpts := NewHandlerOptions().
 		WithDestination(dest).
 		WithAttributesKey(attributesKey)
-	
+
 	if opts != nil {
 		handlerOpts = handlerOpts.WithSawmillOptions(opts)
 	}
-	
+
 	return NewXMLHandler(handlerOpts)
 }
 
@@ -419,11 +419,11 @@ func NewYAMLHandlerWithKey(dest Destination, opts *SawmillOptions, attributesKey
 	handlerOpts := NewHandlerOptions().
 		WithDestination(dest).
 		WithAttributesKey(attributesKey)
-	
+
 	if opts != nil {
 		handlerOpts = handlerOpts.WithSawmillOptions(opts)
 	}
-	
+
 	return NewYAMLHandler(handlerOpts)
 }
 
@@ -434,11 +434,11 @@ func NewTextHandlerWithColors(dest Destination, opts *SawmillOptions, colorMappi
 		WithDestination(dest).
 		WithColorMappings(colorMappings).
 		WithColorsEnabled(enableColors)
-	
+
 	if opts != nil {
 		handlerOpts = handlerOpts.WithSawmillOptions(opts)
 	}
-	
+
 	return NewTextHandler(handlerOpts)
 }
 
@@ -449,11 +449,11 @@ func NewJSONHandlerWithColors(dest Destination, opts *SawmillOptions, colorMappi
 		WithDestination(dest).
 		WithColorMappings(colorMappings).
 		WithColorsEnabled(enableColors)
-	
+
 	if opts != nil {
 		handlerOpts = handlerOpts.WithSawmillOptions(opts)
 	}
-	
+
 	return NewJSONHandler(handlerOpts)
 }
 
@@ -490,12 +490,12 @@ func createTextFormatter(options *HandlerOptions) *TextFormatter {
 	formatter.AttributeFormat = options.attrFormat
 	formatter.ColorOutput = options.colorOutput
 	formatter.AttributesKey = options.attributesKey
-	
+
 	if options.enableColors {
 		formatter.ColorScheme = NewColorScheme(options.colorMappings)
 		formatter.ColorOutput = true
 	}
-	
+
 	return formatter
 }
 
@@ -507,12 +507,12 @@ func createJSONFormatter(options *HandlerOptions) *JSONFormatter {
 	formatter.IncludeLevel = options.includeLevel
 	formatter.AttributesKey = options.attributesKey
 	formatter.ColorOutput = options.colorOutput
-	
+
 	if options.enableColors {
 		formatter.ColorScheme = NewColorScheme(options.colorMappings)
 		formatter.ColorOutput = true
 	}
-	
+
 	return formatter
 }
 
@@ -522,7 +522,7 @@ func createXMLFormatter(options *HandlerOptions) *XMLFormatter {
 	formatter.IncludeSource = options.includeSource
 	formatter.IncludeLevel = options.includeLevel
 	formatter.AttributesKey = options.attributesKey
-	
+
 	return formatter
 }
 
@@ -532,7 +532,7 @@ func createYAMLFormatter(options *HandlerOptions) *YAMLFormatter {
 	formatter.IncludeSource = options.includeSource
 	formatter.IncludeLevel = options.includeLevel
 	formatter.AttributesKey = options.attributesKey
-	
+
 	return formatter
 }
 
@@ -542,11 +542,11 @@ func createKeyValueFormatter(options *HandlerOptions) *KeyValueFormatter {
 	formatter.IncludeSource = options.includeSource
 	formatter.IncludeLevel = options.includeLevel
 	formatter.ColorOutput = options.colorOutput
-	
+
 	if options.enableColors {
 		formatter.ColorScheme = NewColorScheme(options.colorMappings)
 		formatter.ColorOutput = true
 	}
-	
+
 	return formatter
 }

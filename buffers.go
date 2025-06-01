@@ -11,8 +11,8 @@ import (
 
 // MemoryBuffer implements Buffer interface using in-memory storage
 type MemoryBuffer struct {
-	buf    *bytes.Buffer
-	mu     sync.RWMutex
+	buf     *bytes.Buffer
+	mu      sync.RWMutex
 	maxSize int64
 }
 
@@ -27,11 +27,11 @@ func NewMemoryBuffer(maxSize int64) *MemoryBuffer {
 func (b *MemoryBuffer) Write(p []byte) (int, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	
+
 	if b.maxSize > 0 && int64(b.buf.Len())+int64(len(p)) > b.maxSize {
 		b.buf.Reset()
 	}
-	
+
 	return b.buf.Write(p)
 }
 
@@ -135,12 +135,12 @@ func (b *FileBuffer) Flush() error {
 func (b *FileBuffer) Close() error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	
+
 	if err := b.writer.Flush(); err != nil {
 		b.file.Close()
 		return err
 	}
-	
+
 	return b.file.Close()
 }
 
@@ -226,7 +226,7 @@ func (b *RotatingFileBuffer) rotate() error {
 	}
 
 	b.rotateCount++
-	
+
 	// Remove old files if we exceed maxFiles
 	if b.maxFiles > 0 && b.rotateCount > b.maxFiles {
 		oldFile := b.getRotatedFilename(b.rotateCount - b.maxFiles)
