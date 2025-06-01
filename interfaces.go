@@ -29,6 +29,7 @@ type Record struct {
 	Attributes *FlatAttributes
 	Context    context.Context
 	PC         uintptr
+	OutputID   string // Unique identifier for correlating multiline outputs
 }
 
 // NewRecord creates a new log record
@@ -106,6 +107,20 @@ type Logger interface {
 	WithCallback(fn CallbackFunc) Logger
 	SetHandler(handler Handler)
 	Handler() Handler
+	As(formatter Formatter) AsLogger
+}
+
+// AsLogger provides temporary format switching for single messages
+type AsLogger interface {
+	Trace(msg string, args ...interface{})
+	Debug(msg string, args ...interface{})
+	Info(msg string, args ...interface{})
+	Warn(msg string, args ...interface{})
+	Error(msg string, args ...interface{})
+	Fatal(msg string, args ...interface{})
+	Panic(msg string, args ...interface{})
+	Mark(msg string, args ...interface{})
+	Log(ctx context.Context, level Level, msg string, args ...interface{})
 }
 
 // Destination represents various output targets

@@ -168,12 +168,12 @@ type XMLFormatter struct {
 
 // XMLRecord represents the XML structure for log records
 type XMLRecord struct {
-	XMLName   xml.Name               `xml:"record"`
-	Timestamp string                 `xml:"timestamp"`
-	Level     string                 `xml:"level,omitempty"`
-	Message   string                 `xml:"message"`
-	Source    *XMLSource             `xml:"source,omitempty"`
-	Data      map[string]interface{} `xml:",any"`
+	XMLName    xml.Name   `xml:"record"`
+	Timestamp  string     `xml:"timestamp"`
+	Level      string     `xml:"level,omitempty"`
+	Message    string     `xml:"message"`
+	Source     *XMLSource `xml:"source,omitempty"`
+	Attributes string     `xml:"attributes,omitempty"`
 }
 
 type XMLSource struct {
@@ -196,7 +196,6 @@ func (f *XMLFormatter) Format(record *Record) ([]byte, error) {
 	xmlRecord := XMLRecord{
 		Timestamp: record.Time.Format(f.TimeFormat),
 		Message:   record.Message,
-		Data:      make(map[string]interface{}),
 	}
 
 	if f.IncludeLevel {
@@ -213,12 +212,14 @@ func (f *XMLFormatter) Format(record *Record) ([]byte, error) {
 		}
 	}
 
+	// Convert attributes to a simple string representation for XML
 	if !record.Attributes.IsEmpty() {
-		attributesKey := f.AttributesKey
-		if attributesKey == "" {
-			attributesKey = "attributes"
-		}
-		xmlRecord.Data[attributesKey] = record.Attributes.ToNestedMap()
+		var attrsBuilder strings.Builder
+		record.Attributes.Walk(func(path []string, value interface{}) {
+			key := strings.Join(path, ".")
+			attrsBuilder.WriteString(fmt.Sprintf("%s=%v ", key, value))
+		})
+		xmlRecord.Attributes = strings.TrimSpace(attrsBuilder.String())
 	}
 
 	data, err := xml.MarshalIndent(xmlRecord, "", "  ")

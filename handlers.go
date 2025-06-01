@@ -573,3 +573,76 @@ func createKeyValueFormatter(options *HandlerOptions) *KeyValueFormatter {
 
 	return formatter
 }
+
+// temporaryHandler wraps an existing handler to use a different formatter temporarily
+type temporaryHandler struct {
+	originalHandler Handler
+	formatter       Formatter
+}
+
+func (h *temporaryHandler) Handle(ctx context.Context, record *Record) error {
+	if !h.originalHandler.Enabled(ctx, record.Level) {
+		return nil
+	}
+
+	// Format with our temporary formatter
+	data, err := h.formatter.Format(record)
+	if err != nil {
+		return err
+	}
+
+	// Get the buffer from the original handler to write to
+	var buffer Buffer
+	
+	switch originalHandler := h.originalHandler.(type) {
+	case *TextHandler:
+		originalHandler.mu.RLock()
+		buffer = originalHandler.buffer
+		originalHandler.mu.RUnlock()
+	case *JSONHandler:
+		originalHandler.mu.RLock()
+		buffer = originalHandler.buffer
+		originalHandler.mu.RUnlock()
+	case *XMLHandler:
+		originalHandler.mu.RLock()
+		buffer = originalHandler.buffer
+		originalHandler.mu.RUnlock()
+	case *YAMLHandler:
+		originalHandler.mu.RLock()
+		buffer = originalHandler.buffer
+		originalHandler.mu.RUnlock()
+	case *KeyValueHandler:
+		originalHandler.mu.RLock()
+		buffer = originalHandler.buffer
+		originalHandler.mu.RUnlock()
+	case *BaseHandler:
+		originalHandler.mu.RLock()
+		buffer = originalHandler.buffer
+		originalHandler.mu.RUnlock()
+	default:
+		// Fallback: use the original handler's Handle method
+		return h.originalHandler.Handle(ctx, record)
+	}
+
+	// Write to the original handler's buffer
+	_, err = buffer.Write(data)
+	return err
+}
+
+func (h *temporaryHandler) WithAttrs(attrs []slog.Attr) Handler {
+	return &temporaryHandler{
+		originalHandler: h.originalHandler.WithAttrs(attrs),
+		formatter:       h.formatter,
+	}
+}
+
+func (h *temporaryHandler) WithGroup(name string) Handler {
+	return &temporaryHandler{
+		originalHandler: h.originalHandler.WithGroup(name),
+		formatter:       h.formatter,
+	}
+}
+
+func (h *temporaryHandler) Enabled(ctx context.Context, level Level) bool {
+	return h.originalHandler.Enabled(ctx, level)
+}
