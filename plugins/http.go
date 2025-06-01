@@ -2,6 +2,7 @@ package plugins
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/bresrch/sawmill"
 )
