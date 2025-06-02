@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"log"
 	"log/slog"
 	"runtime"
 	"sync"
@@ -395,4 +396,33 @@ func (l *logger) WithAttrs(attrs []slog.Attr) Logger {
 		newLogger.attrs.Set(keyPath, attr.Value.Any())
 	}
 	return newLogger
+}
+
+// HTTPErrorLog returns a *log.Logger compatible with http.Server.ErrorLog
+//
+// Example usage:
+//   logger := sawmill.Default()
+//   srv := &http.Server{
+//       Addr:     ":8080",
+//       Handler:  router,
+//       ErrorLog: logger.HTTPErrorLog(),
+//   }
+func (l *logger) HTTPErrorLog() *log.Logger {
+	return log.New(&httpErrorLogWriter{logger: l}, "", 0)
+}
+
+// httpErrorLogWriter adapts sawmill logger for use with standard log.Logger
+type httpErrorLogWriter struct {
+	logger *logger
+}
+
+// Write implements io.Writer interface for HTTP error logging
+func (w *httpErrorLogWriter) Write(p []byte) (n int, err error) {
+	msg := string(p)
+	// Remove trailing newline if present
+	if len(msg) > 0 && msg[len(msg)-1] == '\n' {
+		msg = msg[:len(msg)-1]
+	}
+	w.logger.Error(msg)
+	return len(p), nil
 }

@@ -3,6 +3,7 @@ package sawmill
 import (
 	"context"
 	"io"
+	"log"
 	"log/slog"
 	"time"
 )
@@ -108,6 +109,7 @@ type Logger interface {
 	SetHandler(handler Handler)
 	Handler() Handler
 	As(formatter Formatter) AsLogger
+	HTTPErrorLog() *log.Logger
 }
 
 // AsLogger provides temporary format switching for single messages
