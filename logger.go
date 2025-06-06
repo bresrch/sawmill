@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"reflect"
 	"runtime"
+	"strings"
 	"sync"
 )
 
@@ -150,8 +152,14 @@ func (l *logger) processArgsOptimized(record *Record, args ...interface{}) {
 			}
 
 			value := args[i+1]
-			// Use optimized SetFast directly
-			record.Attributes.SetFast(key, value)
+			
+			// Check if value is a struct and should be expanded
+			if l.shouldExpandStruct(value) {
+				record.Attributes.ExpandStruct(key, value)
+			} else {
+				// Use optimized SetFast directly for non-struct values
+				record.Attributes.SetFast(key, value)
+			}
 		}
 		return
 	}
@@ -173,8 +181,33 @@ func (l *logger) processArgsOptimized(record *Record, args ...interface{}) {
 		keyPath := make([]string, len(l.groups)+1)
 		copy(keyPath, l.groups)
 		keyPath[len(l.groups)] = key
-		record.Attributes.Set(keyPath, value)
+
+		// Check if value is a struct and should be expanded
+		if l.shouldExpandStruct(value) {
+			pathStr := key
+			if len(l.groups) > 0 {
+				pathStr = fmt.Sprintf("%s.%s", strings.Join(l.groups, "."), key)
+			}
+			record.Attributes.ExpandStruct(pathStr, value)
+		} else {
+			record.Attributes.Set(keyPath, value)
+		}
 	}
+}
+
+// shouldExpandStruct determines if a value should be expanded as a struct
+func (l *logger) shouldExpandStruct(value interface{}) bool {
+	if value == nil {
+		return false
+	}
+
+	val := reflect.ValueOf(value)
+	// Handle pointers to structs
+	if val.Kind() == reflect.Ptr && !val.IsNil() {
+		val = val.Elem()
+	}
+
+	return val.Kind() == reflect.Struct
 }
 
 // Trace logs a message at trace level
