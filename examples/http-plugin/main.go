@@ -350,7 +350,7 @@ func main() {
 	time.Sleep(500 * time.Millisecond)
 
 	// Make test requests
-	fmt.Println("\nMaking test requests...\n")
+	fmt.Println("\nMaking test requests...")
 	makeTestRequests()
 
 	// Shutdown server

@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -396,6 +398,47 @@ func (f *FlatAttributes) reset() {
 	f.smallCount = 0
 }
 
+// maskValue applies masking to a field value based on the sawmill tag
+func (f *FlatAttributes) maskValue(value interface{}, maskTag string) interface{} {
+	if maskTag == "" {
+		return value
+	}
+
+	strValue := fmt.Sprintf("%v", value)
+	if strValue == "" {
+		return value
+	}
+
+	// Check for mask with number pattern: mask[n]
+	re := regexp.MustCompile(`^mask\[(\d+)\]$`)
+	if matches := re.FindStringSubmatch(maskTag); len(matches) > 1 {
+		// Parse the number of characters to unmask
+		unmaskCount, err := strconv.Atoi(matches[1])
+		if err != nil || unmaskCount < 0 {
+			// Invalid number, default to full masking
+			return strings.Repeat("*", len(strValue))
+		}
+
+		if unmaskCount >= len(strValue) {
+			// Don't mask if unmask count is greater than or equal to string length
+			return value
+		}
+
+		// Show first n characters, mask the rest
+		unmasked := strValue[:unmaskCount]
+		masked := strings.Repeat("*", len(strValue)-unmaskCount)
+		return unmasked + masked
+	}
+
+	// Simple "mask" tag - mask everything
+	if maskTag == "mask" {
+		return strings.Repeat("*", len(strValue))
+	}
+
+	// Unknown mask format, return original value
+	return value
+}
+
 // ExpandStruct automatically expands struct fields into dot notation
 func (f *FlatAttributes) ExpandStruct(prefix string, value interface{}) {
 	if value == nil {
@@ -437,10 +480,17 @@ func (f *FlatAttributes) ExpandStruct(prefix string, value interface{}) {
 
 		fieldValue := field.Interface()
 
+		// Check for sawmill struct tag for masking
+		sawmillTag := fieldType.Tag.Get("sawmill")
+		
 		// Recursively expand nested structs
 		if field.Kind() == reflect.Struct || (field.Kind() == reflect.Ptr && !field.IsNil() && field.Elem().Kind() == reflect.Struct) {
 			f.ExpandStruct(fieldKey, fieldValue)
 		} else {
+			// Apply masking if sawmill tag contains mask directive
+			if strings.HasPrefix(sawmillTag, "mask") {
+				fieldValue = f.maskValue(fieldValue, sawmillTag)
+			}
 			f.SetByDotNotation(fieldKey, fieldValue)
 		}
 	}
